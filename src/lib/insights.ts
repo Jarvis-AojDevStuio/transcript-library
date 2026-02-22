@@ -11,6 +11,50 @@ export function insightPaths(videoId: string) {
   };
 }
 
+let _insightSetCache: { dirMtimeMs: number; ids: Set<string> } | undefined;
+
+function buildInsightSet(): Set<string> {
+  const base = path.join(process.cwd(), "data", "insights");
+  const ids = new Set<string>();
+  try {
+    const entries = fs.readdirSync(base, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.name.startsWith(".")) continue;
+      if (e.isDirectory()) {
+        // Canonical: data/insights/{videoId}/analysis.md
+        if (fs.existsSync(path.join(base, e.name, "analysis.md"))) {
+          ids.add(e.name);
+        }
+      } else if (e.isFile() && e.name.endsWith(".md")) {
+        // Legacy: data/insights/{videoId}.md
+        ids.add(e.name.slice(0, -3));
+      }
+    }
+  } catch {
+    // ignore — insights dir may not exist yet
+  }
+  return ids;
+}
+
+function getInsightIds(): Set<string> {
+  const base = path.join(process.cwd(), "data", "insights");
+  try {
+    const st = fs.statSync(base);
+    if (_insightSetCache && _insightSetCache.dirMtimeMs === st.mtimeMs) {
+      return _insightSetCache.ids;
+    }
+    const ids = buildInsightSet();
+    _insightSetCache = { dirMtimeMs: st.mtimeMs, ids };
+    return ids;
+  } catch {
+    return new Set();
+  }
+}
+
+export function hasInsight(videoId: string): boolean {
+  return getInsightIds().has(videoId);
+}
+
 export function readInsightMarkdown(videoId: string): {
   kind: "analysis" | "legacy" | "none";
   markdown: string | null;
@@ -55,7 +99,10 @@ export function makePreview(md: string, maxChars = 260) {
     .trim();
 
   // Prefer first non-empty paragraph.
-  const paras = body.split(/\n\n+/).map((s) => s.trim()).filter(Boolean);
+  const paras = body
+    .split(/\n\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const first = paras[0] || "";
   const oneLine = first.replace(/\s+/g, " ").trim();
   if (oneLine.length <= maxChars) return oneLine;

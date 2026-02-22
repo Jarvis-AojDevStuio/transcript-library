@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import { listChannels, getVideo } from "@/lib/catalog";
+import { listChannels, groupVideos } from "@/lib/catalog";
 import { curatedKnowledgeCategories, listKnowledgeCategories } from "@/lib/knowledge";
 import { listRecentInsights } from "@/lib/recent";
 
@@ -15,8 +15,9 @@ export default async function Sidebar() {
   const allKnowledge = listKnowledgeCategories();
   const knowledge = curatedKnowledgeCategories(allKnowledge).slice(0, 8);
 
+  const videoMap = groupVideos();
   const recentInsights = listRecentInsights(8).map((r) => {
-    const v = getVideo(r.videoId);
+    const v = videoMap.get(r.videoId);
     return {
       ...r,
       title: v?.title ?? r.videoId,
@@ -29,7 +30,7 @@ export default async function Sidebar() {
       <div className="space-y-4">
         <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
               Library
             </div>
             <Link
@@ -72,7 +73,7 @@ export default async function Sidebar() {
 
         <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
               Knowledge
             </div>
             <Link
@@ -111,7 +112,7 @@ export default async function Sidebar() {
 
         <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
               Recent insights
             </div>
           </div>

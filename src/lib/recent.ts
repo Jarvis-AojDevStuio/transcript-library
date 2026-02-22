@@ -50,9 +50,7 @@ export function listRecentKnowledge(limit = 8): RecentKnowledgeItem[] {
     }
   }
 
-  return out
-    .sort((a, b) => b.updatedAtMs - a.updatedAtMs)
-    .slice(0, Math.max(0, limit));
+  return out.sort((a, b) => b.updatedAtMs - a.updatedAtMs).slice(0, Math.max(0, limit));
 }
 
 export type RecentInsightItem = {
@@ -60,9 +58,16 @@ export type RecentInsightItem = {
   updatedAtMs: number;
 };
 
+let _recentInsightsCache: { dirMtimeMs: number; items: RecentInsightItem[] } | undefined;
+
 export function listRecentInsights(limit = 8): RecentInsightItem[] {
   const base = insightsBaseDir();
   try {
+    const dirSt = fs.statSync(base);
+    if (_recentInsightsCache && _recentInsightsCache.dirMtimeMs === dirSt.mtimeMs) {
+      return _recentInsightsCache.items.slice(0, limit);
+    }
+
     const entries = fs.readdirSync(base, { withFileTypes: true });
     const items: RecentInsightItem[] = [];
 
@@ -79,7 +84,9 @@ export function listRecentInsights(limit = 8): RecentInsightItem[] {
       }
     }
 
-    return items.sort((a, b) => b.updatedAtMs - a.updatedAtMs).slice(0, limit);
+    const sorted = items.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+    _recentInsightsCache = { dirMtimeMs: dirSt.mtimeMs, items: sorted };
+    return sorted.slice(0, limit);
   } catch {
     return [];
   }

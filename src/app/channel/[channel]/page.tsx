@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
 import { listVideosByChannel } from "@/lib/catalog";
-import { makePreview, readInsightMarkdown } from "@/lib/insights";
+import { hasInsight as checkInsight } from "@/lib/insights";
 
 function dec(s: string) {
   return decodeURIComponent(s);
@@ -11,11 +11,7 @@ function enc(s: string) {
   return encodeURIComponent(s);
 }
 
-export default async function ChannelPage({
-  params,
-}: {
-  params: Promise<{ channel: string }>;
-}) {
+export default async function ChannelPage({ params }: { params: Promise<{ channel: string }> }) {
   const { channel } = await params;
   const channelName = dec(channel);
   const videos = listVideosByChannel(channelName);
@@ -42,9 +38,7 @@ export default async function ChannelPage({
 
       <section className="space-y-3">
         {videos.map((v) => {
-          const insight = readInsightMarkdown(v.videoId);
-          const hasInsight = Boolean(insight.markdown);
-          const preview = hasInsight ? makePreview(insight.markdown || "") : null;
+          const insightExists = checkInsight(v.videoId);
 
           return (
             <a
@@ -54,23 +48,16 @@ export default async function ChannelPage({
             >
               <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
-                  <div className="truncate font-display text-lg tracking-tight">
-                    {v.title}
-                  </div>
+                  <div className="font-display truncate text-lg tracking-tight">{v.title}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge tone="neutral">{v.topic}</Badge>
                     <Badge tone="neutral">{v.totalChunks} parts</Badge>
-                    {hasInsight ? (
+                    {insightExists ? (
                       <Badge tone="ink">Insight</Badge>
                     ) : (
                       <Badge tone="quiet">No insight</Badge>
                     )}
                   </div>
-                  {preview ? (
-                    <div className="mt-3 line-clamp-2 text-sm text-[color:var(--fg)/0.78]">
-                      {preview}
-                    </div>
-                  ) : null}
                 </div>
                 <div className="shrink-0 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-[var(--muted)]">
                   {v.publishedDate || "—"}

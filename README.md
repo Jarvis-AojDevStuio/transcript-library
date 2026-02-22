@@ -3,6 +3,7 @@
 Browse-first library for playlist transcripts + curated insights.
 
 ## What’s here
+
 - UI: `apps/transcript-library` (Next.js)
 - Transcript index + source files: `playlist-transcripts/`
 - Insights output: `apps/transcript-library/data/insights/<videoId>/analysis.md`
@@ -10,14 +11,33 @@ Browse-first library for playlist transcripts + curated insights.
 
 ## Dev
 
-## Getting started
+### Getting started
 
 ```bash
 cd apps/transcript-library
+cp .env.example .env.local   # set PLAYLIST_TRANSCRIPTS_REPO
+npm install
 npm run dev -- --port 3939
 ```
 
 Open: http://127.0.0.1:3939
 
+### Commands
+
+```bash
+npm run dev        # Start dev server
+npm run build      # Production build
+npm run lint       # ESLint
+npx tsc --noEmit   # Type check
+npx prettier --check .  # Format check
+```
+
+### Environment variables
+
+| Variable                    | Purpose                           | Default              |
+| --------------------------- | --------------------------------- | -------------------- |
+| `PLAYLIST_TRANSCRIPTS_REPO` | Path to playlist-transcripts repo | (hardcoded fallback) |
+
 ## Plan / PRD
+
 See `Plans/PRD.md`.

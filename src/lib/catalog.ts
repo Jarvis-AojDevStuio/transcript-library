@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { cache } from "react";
 
 export type VideoRow = {
   video_id: string;
@@ -113,7 +114,19 @@ export function readVideoRows(): VideoRow[] {
   return rows;
 }
 
+let _videosCache:
+  | {
+      mtimeMs: number;
+      map: Map<string, Video>;
+    }
+  | undefined;
+
 export function groupVideos(rows = readVideoRows()): Map<string, Video> {
+  // Return cached map if CSV hasn't changed
+  const p = csvPath();
+  const st = fs.statSync(p);
+  if (_videosCache && _videosCache.mtimeMs === st.mtimeMs) return _videosCache.map;
+
   const map = new Map<string, Video>();
   for (const r of rows) {
     const id = r.parent_video_id || r.video_id;
@@ -138,7 +151,6 @@ export function groupVideos(rows = readVideoRows()): Map<string, Video> {
     } else {
       existing.parts.push(part);
       existing.totalChunks = Math.max(existing.totalChunks, part.chunk);
-      // pick newest published date if mismatch
       if (r.published_date && r.published_date > existing.publishedDate) {
         existing.publishedDate = r.published_date;
       }
@@ -153,10 +165,11 @@ export function groupVideos(rows = readVideoRows()): Map<string, Video> {
     v.totalChunks = v.parts.length;
   }
 
+  _videosCache = { mtimeMs: st.mtimeMs, map };
   return map;
 }
 
-export function listChannels(): ChannelSummary[] {
+export const listChannels = cache(function listChannels(): ChannelSummary[] {
   const videos = Array.from(groupVideos().values());
   const byChannel = new Map<string, ChannelSummary>();
 
@@ -173,7 +186,10 @@ export function listChannels(): ChannelSummary[] {
     } else {
       existing.videoCount++;
       if (v.topic && !existing.topics.includes(v.topic)) existing.topics.push(v.topic);
-      if (v.publishedDate && (!existing.lastPublishedDate || v.publishedDate > existing.lastPublishedDate)) {
+      if (
+        v.publishedDate &&
+        (!existing.lastPublishedDate || v.publishedDate > existing.lastPublishedDate)
+      ) {
         existing.lastPublishedDate = v.publishedDate;
       }
     }
@@ -185,12 +201,12 @@ export function listChannels(): ChannelSummary[] {
     if (da !== db) return db.localeCompare(da);
     return a.channel.localeCompare(b.channel);
   });
-}
+});
 
-export function listVideosByChannel(channel: string): Video[] {
+export const listVideosByChannel = cache(function listVideosByChannel(channel: string): Video[] {
   const videos = Array.from(groupVideos().values()).filter((v) => v.channel === channel);
   return videos.sort((a, b) => (b.publishedDate || "").localeCompare(a.publishedDate || ""));
-}
+});
 
 export function getVideo(videoId: string): Video | undefined {
   return groupVideos().get(videoId);
