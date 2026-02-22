@@ -32,61 +32,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const videos = Array.from(groupVideos().values());
+  // Process asynchronously — return immediately so curl --max-time 10 doesn't timeout
+  (async () => {
+    const videos = groupVideos();
 
-  // Find un-analyzed videos
-  const unanalyzed = videos.filter((v) => {
-    // Skip if analysis.md already exists
-    try {
-      fs.accessSync(analysisPath(v.videoId));
-      return false;
-    } catch {
-      // No analysis yet — candidate for processing
-    }
-
-    // Skip if currently running
-    const st = readStatus(v.videoId);
-    if (st?.status === "running" && isProcessAlive(st.pid)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Spawn what fits within concurrency cap, report honestly
-  let started = 0;
-  let skipped = 0;
-
-  for (const video of unanalyzed) {
-    const transcriptParts = video.parts.map((p) => {
-      const abs = absTranscriptPath(p.filePath);
+    for (const [videoId, video] of videos) {
+      // Skip if analysis already exists
       try {
-        return fs.readFileSync(abs, "utf8");
+        fs.accessSync(analysisPath(videoId));
+        continue;
       } catch {
-        return `[Part ${p.chunk}: file not found]`;
+        // No analysis.md — proceed
       }
-    });
-    const transcript = transcriptParts.join("\n\n---\n\n");
 
-    const spawned = spawnAnalysis(
-      video.videoId,
-      { title: video.title, channel: video.channel, topic: video.topic, publishedDate: video.publishedDate },
-      transcript,
-      "[sync-hook]",
-    );
+      // Skip if already running with alive PID
+      const status = readStatus(videoId);
+      if (status?.status === "running" && isProcessAlive(status.pid)) {
+        continue;
+      }
 
-    if (spawned) {
-      started++;
-    } else {
-      skipped++;
+      // Build transcript
+      const transcriptParts = video.parts.map((p) => {
+        const abs = absTranscriptPath(p.filePath);
+        try {
+          return fs.readFileSync(abs, "utf8");
+        } catch {
+          return `[Part ${p.chunk}: file not found]`;
+        }
+      });
+      const transcript = transcriptParts.join("\n\n---\n\n");
+
+      const spawned = spawnAnalysis(
+        videoId,
+        { title: video.title, channel: video.channel, topic: video.topic, publishedDate: video.publishedDate },
+        transcript,
+        "[sync-hook]",
+      );
+
+      if (!spawned) {
+        console.log("[sync-hook] Concurrency cap reached, stopping batch");
+        break;
+      }
     }
-  }
-
-  return NextResponse.json({
-    ok: true,
-    message: "analysis triggered",
-    started,
-    skipped,
-    total: unanalyzed.length,
+  })().catch((err) => {
+    console.error("[sync-hook] Batch processing error:", err);
   });
+
+  return NextResponse.json({ ok: true, message: "analysis triggered" });
 }

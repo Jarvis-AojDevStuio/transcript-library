@@ -377,25 +377,25 @@ startTransition(() => setInsightData(result));
 </details>
 
 **Video Page — `src/app/video/[videoId]/page.tsx`:**
-- [ ] Extract analysis UI: server component reads initial insight/status, passes as props to `AnalysisPanel`
-- [ ] Remove `<form method="post">` — replaced by client component's `fetch()`
-- [ ] Keep all other server-rendered content unchanged
+- [x] Extract analysis UI: server component reads initial insight/status, passes as props to `AnalysisPanel`
+- [x] Remove `<form method="post">` — replaced by client component's `fetch()`
+- [x] Keep all other server-rendered content unchanged
 
 **Claude Invocation:**
-- [ ] `spawn("claude", ["-p", prompt])` with `--add-dir` flags
-- [ ] Prompt includes `/YouTubeAnalyzer` skill reference
-- [ ] Transcript content piped via stdin: buffer stdout chunks, write to `analysis.md` on `close` event. Node controls the output path — do not let claude write the file directly.
-- [ ] Output: `data/insights/{videoId}/analysis.md`
+- [x] `spawn("claude", ["-p", prompt])` — pipes prompt via stdin
+- [x] Prompt includes `/YouTubeAnalyzer` skill reference
+- [x] Transcript content piped via stdin: buffer stdout chunks, write to `analysis.md` on `close` event. Node controls the output path — do not let claude write the file directly.
+- [x] Output: `data/insights/{videoId}/analysis.md`
 
 **Cleanup:**
-- [ ] Delete `scripts/analysis-worker.sh` (replaced by inline execution)
-- [ ] Delete `data/queue/` directory and all contents (3 queued + 2 failed jobs)
+- [x] Delete `scripts/analysis-worker.sh` (replaced by inline execution)
+- [x] Delete `data/queue/` directory and all contents (19 queued + failed + processing jobs)
 
 ### Phase 3: Webhook & Auto-Analysis
 
 **Post-sync endpoint + sync script integration**
 
-- [ ] `src/app/api/sync-hook/route.ts` — New POST endpoint:
+- [x] `src/app/api/sync-hook/route.ts` — New POST endpoint:
   - Auth: simple bearer token check (`Authorization: Bearer $SYNC_TOKEN`). If `SYNC_TOKEN` env var is not set or empty, return `503 { error: "webhook not configured" }`
   - Returns 200 immediately with `{ ok: true, message: "analysis triggered" }`
   - Asynchronously reads `videos.csv`, identifies un-analyzed videos (videoId exists in CSV but no `data/insights/{videoId}/analysis.md`)
@@ -406,11 +406,11 @@ startTransition(() => setInsightData(result));
   - Skips videos where `status.json` shows "running" with alive PID (already in progress)
   - Error responses sanitized — never expose internal paths
   - `export const runtime = "nodejs"`
-- [ ] `sync_playlist.sh` (in `playlist-transcripts` repo) — Add curl step after git push:
+- [x] `sync_playlist.sh` (in `playlist-transcripts` repo) — Add curl step after git push:
   - `curl --fail-with-body --max-time 10 -X POST -H "Authorization: Bearer $SYNC_TOKEN" http://localhost:3939/api/sync-hook`
   - Fails silently if server isn't running (non-blocking to sync pipeline)
-- [ ] Add `SYNC_TOKEN` to `.env.local` — minimum 32 characters, generated via `openssl rand -hex 32`
-- [ ] When webhook and analyze route both need `atomicWriteJson` and spawn logic, extract shared code to `src/lib/analysis.ts` at that point (not before)
+- [x] Add `SYNC_TOKEN` to `.env.local` — minimum 32 characters, generated via `openssl rand -hex 32`
+- [x] When webhook and analyze route both need `atomicWriteJson` and spawn logic, extract shared code to `src/lib/analysis.ts` at that point (not before)
 
 <details>
 <summary>Research Insights: Bearer Token Auth Pattern</summary>
