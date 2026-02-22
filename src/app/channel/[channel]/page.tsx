@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
 import { listVideosByChannel } from "@/lib/catalog";
-import { hasInsight as checkInsight } from "@/lib/insights";
+import { hasInsight } from "@/lib/insights";
 
 function dec(s: string) {
-  return decodeURIComponent(s);
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 
 function enc(s: string) {
@@ -38,7 +42,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ channe
 
       <section className="space-y-3">
         {videos.map((v) => {
-          const insightExists = checkInsight(v.videoId);
+          const insightExists = hasInsight(v.videoId);
 
           return (
             <a

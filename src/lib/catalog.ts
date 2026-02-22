@@ -121,12 +121,13 @@ let _videosCache:
     }
   | undefined;
 
-export function groupVideos(rows = readVideoRows()): Map<string, Video> {
+export function groupVideos(rows?: VideoRow[]): Map<string, Video> {
   // Return cached map if CSV hasn't changed
   const p = csvPath();
   const st = fs.statSync(p);
   if (_videosCache && _videosCache.mtimeMs === st.mtimeMs) return _videosCache.map;
 
+  if (!rows) rows = readVideoRows();
   const map = new Map<string, Video>();
   for (const r of rows) {
     const id = r.parent_video_id || r.video_id;
