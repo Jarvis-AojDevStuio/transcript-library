@@ -46,10 +46,14 @@ function spawnAnalysis(videoId: string, title: string, channel: string, topic: s
     transcript,
   ].join("\n");
 
-  const child = spawn("claude", ["-p", prompt], {
-    stdio: ["ignore", "pipe", "pipe"],
+  // Pipe prompt via stdin to avoid ARG_MAX limit on large transcripts
+  const child = spawn("claude", ["-p"], {
+    stdio: ["pipe", "pipe", "pipe"],
     detached: false,
   });
+
+  child.stdin!.write(prompt);
+  child.stdin!.end();
 
   if (child.pid === undefined) {
     atomicWriteJson(statusPath(videoId), {
@@ -71,8 +75,12 @@ function spawnAnalysis(videoId: string, title: string, channel: string, topic: s
   });
 
   const chunks: Buffer[] = [];
+  const stderrChunks: Buffer[] = [];
   child.stdout?.on("data", (chunk: Buffer) => {
     chunks.push(chunk);
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    stderrChunks.push(chunk);
   });
 
   const timeout = setTimeout(() => {
@@ -87,11 +95,16 @@ function spawnAnalysis(videoId: string, title: string, channel: string, topic: s
     clearTimeout(timeout);
     decrementRunning();
 
+    const stderr = Buffer.concat(stderrChunks).toString("utf8");
+    if (stderr) console.error(`[sync-hook] stderr for ${videoId}:`, stderr.slice(0, 2000));
+
     if (code === 0 && chunks.length > 0) {
       const output = Buffer.concat(chunks).toString("utf8");
       const outDir = insightDir(videoId);
       fs.mkdirSync(outDir, { recursive: true });
-      fs.writeFileSync(analysisPath(videoId), output);
+      const tmpPath = `${analysisPath(videoId)}.tmp_${Date.now()}`;
+      fs.writeFileSync(tmpPath, output);
+      fs.renameSync(tmpPath, analysisPath(videoId));
       atomicWriteJson(statusPath(videoId), {
         status: "complete",
         pid: child.pid!,

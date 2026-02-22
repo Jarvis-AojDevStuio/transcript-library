@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Markdown } from "@/components/Markdown";
-import { Badge } from "@/components/Badge";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Status = "idle" | "running" | "complete" | "failed";
 
@@ -14,9 +12,7 @@ type Props = {
 
 export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props) {
   const [status, setStatus] = useState<Status>(initialStatus);
-  const [insight, setInsight] = useState<string | null>(initialInsight);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mountedRef = useRef(true);
@@ -54,10 +50,8 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         if (!mountedRef.current) return;
 
         if (data.status === "complete") {
-          startTransition(() => {
-            setStatus("complete");
-            setError(null);
-          });
+          setStatus("complete");
+          setError(null);
           // Reload to get server-rendered insight
           window.location.reload();
           return;
@@ -116,7 +110,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     }
   }, [initialStatus, poll]);
 
-  const hasExistingInsight = initialInsight !== null || insight !== null;
+  const hasExistingInsight = initialInsight !== null;
 
   const buttonLabel = (() => {
     if (status === "running") return "Analyzing\u2026";

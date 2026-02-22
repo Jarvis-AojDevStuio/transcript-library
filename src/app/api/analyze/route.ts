@@ -11,8 +11,7 @@ import {
   analysisPath,
   insightDir,
   isValidVideoId,
-  canSpawn,
-  incrementRunning,
+  tryAcquireSlot,
   decrementRunning,
 } from "@/lib/analysis";
 
@@ -37,8 +36,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "already running" }, { status: 409 });
   }
 
-  // Check global concurrency
-  if (!canSpawn()) {
+  // Atomically check and acquire concurrency slot
+  if (!tryAcquireSlot()) {
     return NextResponse.json({ ok: false, error: "too many analyses running" }, { status: 429 });
   }
 
@@ -67,13 +66,18 @@ export async function POST(req: Request) {
     transcript,
   ].join("\n");
 
-  // Spawn claude -p
-  const child = spawn("claude", ["-p", prompt], {
-    stdio: ["ignore", "pipe", "pipe"],
+  // Spawn claude -p, pipe prompt via stdin to avoid ARG_MAX limit
+  const child = spawn("claude", ["-p"], {
+    stdio: ["pipe", "pipe", "pipe"],
     detached: false,
   });
 
+  // Write prompt to stdin (avoids macOS 262KB ARG_MAX for large transcripts)
+  child.stdin!.write(prompt);
+  child.stdin!.end();
+
   if (child.pid === undefined) {
+    decrementRunning(); // Release the slot we acquired
     atomicWriteJson(statusPath(videoId), {
       status: "failed",
       pid: 0,
@@ -83,9 +87,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "spawn failed" }, { status: 500 });
   }
 
-  // Track concurrency
-  incrementRunning();
-
   // Write initial status
   const startedAt = new Date().toISOString();
   atomicWriteJson(statusPath(videoId), {
@@ -94,10 +95,14 @@ export async function POST(req: Request) {
     startedAt,
   });
 
-  // Buffer stdout
+  // Buffer stdout and stderr
   const chunks: Buffer[] = [];
+  const stderrChunks: Buffer[] = [];
   child.stdout?.on("data", (chunk: Buffer) => {
     chunks.push(chunk);
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    stderrChunks.push(chunk);
   });
 
   // 5-minute timeout with SIGTERM -> SIGKILL escalation
@@ -114,11 +119,17 @@ export async function POST(req: Request) {
     clearTimeout(timeout);
     decrementRunning();
 
+    const stderr = Buffer.concat(stderrChunks).toString("utf8");
+    if (stderr) console.error(`[analyze] stderr for ${videoId}:`, stderr.slice(0, 2000));
+
     if (code === 0 && chunks.length > 0) {
       const output = Buffer.concat(chunks).toString("utf8");
+      // Atomic write for analysis.md — prevents corrupted output on crash
       const outDir = insightDir(videoId);
       fs.mkdirSync(outDir, { recursive: true });
-      fs.writeFileSync(analysisPath(videoId), output);
+      const tmpPath = `${analysisPath(videoId)}.tmp_${Date.now()}`;
+      fs.writeFileSync(tmpPath, output);
+      fs.renameSync(tmpPath, analysisPath(videoId));
       atomicWriteJson(statusPath(videoId), {
         status: "complete",
         pid: child.pid!,

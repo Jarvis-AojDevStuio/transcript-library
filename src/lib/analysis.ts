@@ -42,6 +42,13 @@ export function canSpawn(): boolean {
   return getRunningCount() < MAX_CONCURRENT;
 }
 
+/** Atomic check-and-increment to prevent TOCTOU race between canSpawn() and incrementRunning() */
+export function tryAcquireSlot(): boolean {
+  if (getRunningCount() >= MAX_CONCURRENT) return false;
+  incrementRunning();
+  return true;
+}
+
 // --- Atomic file write ---
 
 export function atomicWriteJson(filePath: string, obj: unknown): void {

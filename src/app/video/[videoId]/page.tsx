@@ -55,6 +55,7 @@ export default async function VideoPage({
               <a
                 href={youtubeUrl}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm"
               >
                 Open YouTube
