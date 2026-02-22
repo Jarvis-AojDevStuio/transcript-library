@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import SidebarSkeleton from "@/components/SidebarSkeleton";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,9 +25,7 @@ export default function RootLayout({
                 <Link href="/" className="font-display text-lg tracking-tight">
                   Transcript Library
                 </Link>
-                <span className="text-xs text-[var(--muted)]">
-                  browse-first
-                </span>
+                <span className="text-xs text-[var(--muted)]">browse-first</span>
               </div>
               <nav className="flex items-center gap-3 text-sm">
                 <Link className="text-[var(--muted)] hover:text-[var(--fg)]" href="/">
@@ -39,11 +39,13 @@ export default function RootLayout({
           </header>
           <main className="mx-auto max-w-6xl px-5 py-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-              <Sidebar />
+              <Suspense fallback={<SidebarSkeleton />}>
+                <Sidebar />
+              </Suspense>
               <div className="min-w-0">{children}</div>
             </div>
           </main>
-          <footer className="mx-auto max-w-6xl px-5 pb-10 pt-12 text-xs text-[var(--muted)]">
+          <footer className="mx-auto max-w-6xl px-5 pt-12 pb-10 text-xs text-[var(--muted)]">
             Local-only • newest-first • built for &quot;watch mode&quot;
           </footer>
         </div>
