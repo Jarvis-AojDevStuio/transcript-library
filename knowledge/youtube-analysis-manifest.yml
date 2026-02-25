@@ -1,0 +1,211 @@
+# YouTube Transcript Analysis Manifest
+# Generated: 2026-02-01
+# Purpose: Track analysis status to prevent re-processing
+
+batch_date: "2026-02-01"
+total_videos: 20
+
+videos:
+  # === AI/LLMs Discussions (12) ===
+  - video_id: "ai-jason-mcp-dead"
+    title: "Why MCP is dead & How I vibe now"
+    channel: "AI Jason"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/AI Jason/2026-01-31_why-mcp-is-dead-how-i-vibe-now.md"
+    output_path: "knowledge/technology/youtube-summaries/ai-jason-why-mcp-is-dead.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "alejandro-claude-skills"
+    title: "Claude Code Skills & skills.sh - Crash Course"
+    channel: "Alejandro AO + HuggingFace"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Alejandro AO and HuggingFace/2026-01-31_claude-code-skills-skillssh---crash-course.md"
+    output_path: "knowledge/technology/youtube-summaries/alejandro-claude-code-skills-crash-course.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "alejandro-medgemma"
+    title: "MedGemma 1.5: Google's Medical AI"
+    channel: "Alejandro AO"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Alejandro AO/2026-01-31_medgemma-15-googles-open-source-medical-ai-with-3d-imaging-tutorial.md"
+    output_path: "knowledge/technology/youtube-summaries/alejandro-medgemma-medical-ai.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "better-stack-ralph-wiggum"
+    title: "Anthropic Messed Up The Ralph Wiggum"
+    channel: "Better Stack"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Better Stack/2026-01-31_i-cant-believe-anthropic-messed-up-the-ralph-wiggum.md"
+    output_path: "knowledge/technology/youtube-summaries/better-stack-anthropic-ralph-wiggum.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "chase-ai-remotion"
+    title: "Claude Code Taking Video Editor Jobs (Remotion)"
+    channel: "Chase AI"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Chase AI/2026-01-31_claude-code-is-taking-video-editor-jobs-now-remotion-skills.md"
+    output_path: "knowledge/technology/youtube-summaries/chase-ai-claude-code-remotion.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "chase-ai-poison"
+    title: "Secret Poison Killing Claude Code Performance"
+    channel: "Chase AI"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Chase AI/2026-01-31_the-secret-poison-killing-your-claude-code-performance.md"
+    output_path: "knowledge/technology/youtube-summaries/chase-ai-secret-poison-claude-code.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "dustin-vannoy-data-eng"
+    title: "Claude Code: 5 Essentials for Data Engineering"
+    channel: "Dustin Vannoy"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Dustin Vannoy/2026-01-31_claude-code-5-essentials-for-data-engineering.md"
+    output_path: "knowledge/technology/youtube-summaries/dustin-vannoy-claude-code-data-engineering.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "indydevdan-deletes-prod"
+    title: "Claude Code Deletes Production"
+    channel: "IndyDevDan"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/IndyDevDan/2026-01-31_claude-code-is-amazing-until-it-deletes-production.md"
+    output_path: "knowledge/technology/youtube-summaries/indydevdan-claude-code-deletes-production.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "indydevdan-senior-feature"
+    title: "Claude Code Feature Senior Engineers KEEP MISSING"
+    channel: "IndyDevDan"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/IndyDevDan/2026-01-31_the-claude-code-feature-senior-engineers-keep-missing.md"
+    output_path: "knowledge/technology/youtube-summaries/indydevdan-claude-code-senior-feature.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "prompt-eng-dont-outsource"
+    title: "Don't Outsource Your Thinking to your Agent"
+    channel: "Prompt Engineering"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Prompt Engineering/2026-01-31_dont-outsource-your-thinking-to-your-agent.md"
+    output_path: "knowledge/technology/youtube-summaries/prompt-engineering-dont-outsource-thinking.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "ray-amjad-task-system"
+    title: "Claude Code's New Task System Explained"
+    channel: "Ray Amjad"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Ray Amjad/2026-01-31_claude-codes-new-task-system-explained.md"
+    output_path: "knowledge/technology/youtube-summaries/ray-amjad-claude-code-task-system.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "yc-ai-memory"
+    title: "Startup Trying To Solve AI Memory Problem"
+    channel: "YC Root Access"
+    source_topic: ai-llms
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/YC Root Access/2026-01-31_this-startup-is-trying-to-solve-the-ai-memory-problem.md"
+    output_path: "knowledge/technology/youtube-summaries/yc-root-access-ai-memory-problem.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  # === AI/LLMs Tutorials (3) ===
+  - video_id: "alejandro-agentkit-rag"
+    title: "Intro to AgentKit - Create a RAG Agent"
+    channel: "Alejandro AO"
+    source_topic: ai-llms
+    format: tutorial
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Alejandro AO/2026-01-31_intro-to-agentkit---create-a-rag-agent.md"
+    output_path: "knowledge/technology/tutorial-alejandro-agentkit-rag-agent.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "better-stack-rag"
+    title: "How to Build a RAG System That Actually Works"
+    channel: "Better Stack"
+    source_topic: ai-llms
+    format: tutorial
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/Better Stack/2026-01-31_how-to-build-a-rag-system-that-actually-works.md"
+    output_path: "knowledge/technology/tutorial-better-stack-rag-system.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "how-i-ai-senior-guide"
+    title: "Senior Engineer's Guide to AI Coding"
+    channel: "How I AI"
+    source_topic: ai-llms
+    format: tutorial
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/ai-llms/How I AI/2026-01-31_the-senior-engineers-guide-to-ai-coding-context-loading-custom-hooks-and-automat.md"
+    output_path: "knowledge/technology/tutorial-how-i-ai-senior-engineer-guide.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  # === Business Discussions (4) ===
+  - video_id: "3d-dentists-demand"
+    title: "182. Managing Demand, Staffing Shortages"
+    channel: "3D Dentists"
+    source_topic: business
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/business/3D Dentists/2026-01-31_182-managing-demand-staffing-shortages-holding-the-line.md"
+    output_path: "knowledge/business/youtube-summaries/3d-dentists-managing-demand-staffing.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "groeschel-hobby-lobby"
+    title: "Building Hobby Lobby's Legacy (Mart Green)"
+    channel: "Craig Groeschel"
+    source_topic: business
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/business/Craig Groeschel/2026-01-31_building-hobby-lobbys-legacyone-leader-at-a-time-mart-green.md"
+    output_path: "knowledge/business/youtube-summaries/craig-groeschel-hobby-lobby-legacy.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "efficient-app-finance-stack"
+    title: "Startup Finance Stack I Use as Founder (2026)"
+    channel: "Efficient App"
+    source_topic: business
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/business/Efficient App (Alex & Andra)/2026-01-31_the-startup-finance-stack-i-use-as-a-founder-2026.md"
+    output_path: "knowledge/business/youtube-summaries/efficient-app-startup-finance-stack.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  - video_id: "entreleadership-motivate"
+    title: "Simple Strategy Dave Uses to Motivate Team"
+    channel: "EntreLeadership"
+    source_topic: business
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/business/EntreLeadership/2026-01-31_the-simple-strategy-dave-uses-to-motivate-his-team.md"
+    output_path: "knowledge/business/youtube-summaries/entreleadership-dave-motivate-team.md"
+    status: completed
+    analysis_date: "2026-02-01"
+
+  # === Finance Discussion (1) ===
+  - video_id: "damodaran-ai-bubble"
+    title: "Aswath Damodaran on AI Bubble & Investing"
+    channel: "Excess Returns"
+    source_topic: finance-investing
+    format: discussion
+    transcript_path: "repos/playlist-transcripts/youtube-transcripts/topics/finance-investing/Excess Returns/2026-01-31_the-bubble-most-will-get-wrong-aswath-damodaran-on-how-he-is-investing-in-a-worl.md"
+    output_path: "knowledge/finance/youtube-summaries/excess-returns-damodaran-ai-bubble.md"
+    status: completed
+    analysis_date: "2026-02-01"
