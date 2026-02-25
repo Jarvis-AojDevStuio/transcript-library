@@ -6,13 +6,14 @@ function dec(s: string) {
   return decodeURIComponent(s);
 }
 
-export default function KnowledgeDocPage({
+export default async function KnowledgeDocPage({
   params,
 }: {
-  params: { category: string; path: string[] };
+  params: Promise<{ category: string; path: string[] }>;
 }) {
-  const category = dec(params.category);
-  const rel = params.path.map(dec).join("/");
+  const { category: rawCategory, path: rawPath } = await params;
+  const category = dec(rawCategory);
+  const rel = rawPath.map(dec).join("/");
 
   const md = readKnowledgeMarkdown(category, rel);
 
@@ -21,10 +22,10 @@ export default function KnowledgeDocPage({
       <div className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
               Knowledge / {category}
             </div>
-            <h1 className="mt-1 truncate font-display text-2xl tracking-tight">
+            <h1 className="font-display mt-1 truncate text-2xl tracking-tight">
               {titleFromRelPath(rel)}
             </h1>
             <div className="mt-2 text-xs text-[var(--muted)]">{rel}</div>
