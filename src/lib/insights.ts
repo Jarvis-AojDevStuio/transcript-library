@@ -1,16 +1,19 @@
 import fs from "node:fs";
-import { insightDir, analysisPath, insightsBaseDir } from "@/lib/analysis";
+import path from "node:path";
+import { analysisPath, insightsBaseDir } from "@/lib/analysis";
+import { readCatalogMap, resolveInsightPath } from "@/lib/catalog-map";
 import { curateYouTubeAnalyzer } from "@/lib/curation";
 
 const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{6,11}$/;
 
 export function insightPaths(videoId: string) {
   if (!VIDEO_ID_RE.test(videoId)) throw new Error(`Invalid videoId: ${videoId}`);
-  const dir = insightDir(videoId);
+  const base = insightsBaseDir();
+  const mapped = resolveInsightPath(videoId);
   return {
-    dir,
-    analysis: analysisPath(videoId),
-    legacy: `${insightsBaseDir()}/${videoId}.md`,
+    dir: mapped ? path.join(base, mapped) : path.join(base, videoId),
+    analysis: mapped ? path.join(base, mapped, "analysis.md") : analysisPath(videoId),
+    legacy: path.join(base, `${videoId}.md`),
   };
 }
 
@@ -19,19 +22,34 @@ const CACHE_TTL_MS = 5_000;
 let _insightSetCache: { expiresAt: number; ids: Set<string> } | undefined;
 
 function buildInsightSet(): Set<string> {
-  const base = insightsBaseDir();
   const ids = new Set<string>();
+
+  // Primary: catalog-map.json entries
+  const map = readCatalogMap();
+  const base = insightsBaseDir();
+  for (const [videoId, entry] of Object.entries(map)) {
+    const mappedAnalysis = path.join(
+      base,
+      entry.channel,
+      `${entry.date}_${entry.slug}`,
+      "analysis.md",
+    );
+    if (fs.existsSync(mappedAnalysis)) {
+      ids.add(videoId);
+    }
+  }
+
+  // Fallback: scan for unmigrated videoId directories and legacy flat files
   try {
     const entries = fs.readdirSync(base, { withFileTypes: true });
     for (const e of entries) {
       if (e.name.startsWith(".")) continue;
       if (e.isDirectory()) {
-        // Canonical: data/insights/{videoId}/analysis.md
-        if (fs.existsSync(analysisPath(e.name))) {
+        // Skip channel directories (already handled by catalog-map)
+        if (fs.existsSync(path.join(base, e.name, "analysis.md"))) {
           ids.add(e.name);
         }
       } else if (e.isFile() && e.name.endsWith(".md")) {
-        // Legacy: data/insights/{videoId}.md
         ids.add(e.name.slice(0, -3));
       }
     }
@@ -40,6 +58,7 @@ function buildInsightSet(): Set<string> {
       console.debug("Unexpected error reading insights directory:", err);
     }
   }
+
   return ids;
 }
 
@@ -63,6 +82,8 @@ export function readInsightMarkdown(videoId: string): {
   path: string | null;
 } {
   const p = insightPaths(videoId);
+
+  // Tier 1: New catalog-map path (or videoId directory via insightPaths)
   try {
     const md = fs.readFileSync(p.analysis, "utf8");
     return { kind: "analysis", markdown: md, path: p.analysis };
@@ -72,6 +93,19 @@ export function readInsightMarkdown(videoId: string): {
     }
   }
 
+  // Tier 2: Legacy videoId directory (if catalog-map redirected elsewhere)
+  const base = insightsBaseDir();
+  const videoIdAnalysis = path.join(base, videoId, "analysis.md");
+  if (videoIdAnalysis !== p.analysis) {
+    try {
+      const md = fs.readFileSync(videoIdAnalysis, "utf8");
+      return { kind: "analysis", markdown: md, path: videoIdAnalysis };
+    } catch {
+      // fall through
+    }
+  }
+
+  // Tier 3: Legacy flat file
   try {
     const md = fs.readFileSync(p.legacy, "utf8");
     return { kind: "legacy", markdown: md, path: p.legacy };
@@ -88,7 +122,6 @@ function stripFrontmatter(md: string) {
   if (!md.startsWith("---")) return md;
   const idx = md.indexOf("\n---", 3);
   if (idx === -1) return md;
-  // consume the closing --- line
   const after = md.indexOf("\n", idx + 4);
   return after === -1 ? "" : md.slice(after + 1);
 }
@@ -98,7 +131,7 @@ export function makePreview(md: string, maxChars = 260) {
   if (curated.summary) {
     const s = curated.summary.trim();
     if (s.length <= maxChars) return s;
-    return s.slice(0, maxChars - 1).trimEnd() + "…";
+    return s.slice(0, maxChars - 1).trimEnd() + "\u2026";
   }
 
   const body = stripFrontmatter(md)
@@ -108,7 +141,6 @@ export function makePreview(md: string, maxChars = 260) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  // Prefer first non-empty paragraph.
   const paras = body
     .split(/\n\n+/)
     .map((s) => s.trim())
@@ -116,5 +148,5 @@ export function makePreview(md: string, maxChars = 260) {
   const first = paras[0] || "";
   const oneLine = first.replace(/\s+/g, " ").trim();
   if (oneLine.length <= maxChars) return oneLine;
-  return oneLine.slice(0, maxChars - 1).trimEnd() + "…";
+  return oneLine.slice(0, maxChars - 1).trimEnd() + "\u2026";
 }

@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "nightly:insights": "bun run scripts/nightly-insights.ts",
+    "analyze": "bun scripts/batch-analyze.ts",
+    "migrate-insights": "bun scripts/migrate-insights.ts",
     "prepare": "husky"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "highlight.js": "^11.11.1",
     "next": "16.1.6",
     "react": "19.2.3",

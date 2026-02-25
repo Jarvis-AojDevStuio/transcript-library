@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 
 type Status = "idle" | "running" | "complete" | "failed";
 
+type StatusData = {
+  status: Status;
+  error?: string;
+  elapsedSeconds?: number;
+};
+
 type Props = {
   videoId: string;
   initialStatus: Status;
@@ -15,6 +21,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
   const router = useRouter();
   const [status, setStatus] = useState<Status>(initialStatus);
   const [error, setError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState<number | null>(null);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mountedRef = useRef(true);
@@ -30,7 +37,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     };
   }, []);
 
-  const fetchStatus = useCallback(async (): Promise<{ status: Status; error?: string }> => {
+  const fetchStatus = useCallback(async (): Promise<StatusData> => {
     const res = await fetch(`/api/analyze/status?videoId=${encodeURIComponent(videoId)}`);
     if (!res.ok) throw new Error("status fetch failed");
     return res.json();
@@ -41,8 +48,8 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
 
     const elapsed = Date.now() - pollStartRef.current;
 
-    // 6-minute ceiling (server timeout is 5 min + 1 min buffer)
-    if (elapsed > 360_000) {
+    // 15-minute ceiling (matches server-side stale detection)
+    if (elapsed > 900_000) {
       setStatus("failed");
       setError("Analysis is taking longer than expected");
       return;
@@ -55,15 +62,20 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         if (data.status === "complete") {
           setStatus("complete");
           setError(null);
-          // Re-run server components to get the new insight
+          setElapsed(null);
           router.refresh();
           return;
         }
 
         if (data.status === "failed") {
           setStatus("failed");
-          setError(data.error ?? "Analysis failed");
+          setElapsed(null);
+          setError(data.error || "Analysis failed");
           return;
+        }
+
+        if (data.elapsedSeconds != null) {
+          setElapsed(data.elapsedSeconds);
         }
 
         // Still running — schedule next poll with backoff
@@ -75,7 +87,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
       })
       .catch(() => {
         if (!mountedRef.current) return;
-        // Back off on error
         timeoutRef.current = setTimeout(() => pollRef.current?.(), 5000);
       });
   }, [fetchStatus, router]);
@@ -100,7 +111,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         return;
       }
 
-      // Start polling
       pollStartRef.current = Date.now();
       poll();
     } catch {
@@ -109,7 +119,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     }
   };
 
-  // If initial status is running, start polling immediately (deferred to avoid synchronous setState in effect)
   useEffect(() => {
     if (initialStatus === "running") {
       pollStartRef.current = Date.now();
@@ -119,8 +128,12 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
 
   const hasExistingInsight = initialInsight !== null;
 
+  const formatElapsed = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`);
+
   const buttonLabel = (() => {
-    if (status === "running") return "Analyzing\u2026";
+    if (status === "running") {
+      return elapsed != null ? `Analyzing\u2026 ${formatElapsed(elapsed)}` : "Analyzing\u2026";
+    }
     if (status === "failed") return "Retry analysis";
     if (hasExistingInsight) return "Re-run analysis";
     return "Run analysis";
@@ -134,7 +147,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
       return "rounded-full bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700";
     }
     if (hasExistingInsight) {
-      return "rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)]";
+      return "rounded-full border border-black/[0.06] bg-white px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)]";
     }
     return "rounded-full bg-black px-4 py-2 text-sm text-white hover:bg-black/90";
   })();
