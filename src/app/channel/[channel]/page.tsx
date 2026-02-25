@@ -40,20 +40,20 @@ export default async function ChannelPage({ params }: { params: Promise<{ channe
         </div>
       </section>
 
-      <section className="space-y-3">
-        {videos.map((v) => {
+      <section className="rounded-2xl border border-black/10 bg-[color:var(--card)] overflow-hidden shadow-[0_1px_0_rgba(0,0,0,0.06)]">
+        {videos.map((v, i) => {
           const insightExists = hasInsight(v.videoId);
-
           return (
             <a
               key={v.videoId}
               href={`/video/${enc(v.videoId)}`}
-              className="block rounded-2xl border border-black/10 bg-[color:var(--card)] p-5 shadow-[0_1px_0_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+              className={`block px-5 py-3 transition hover:bg-black/[0.04] ${i > 0 ? "border-t border-black/8" : ""}`}
+              style={{ animationDelay: `${i * 40}ms` }}
             >
-              <div className="flex items-start justify-between gap-6">
+              <div className="flex items-center justify-between gap-6">
                 <div className="min-w-0">
-                  <div className="font-display truncate text-lg tracking-tight">{v.title}</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="font-display truncate text-base tracking-tight">{v.title}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <Badge tone="neutral">{v.topic}</Badge>
                     <Badge tone="neutral">{v.totalChunks} parts</Badge>
                     {insightExists ? (

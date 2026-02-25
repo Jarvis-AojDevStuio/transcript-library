@@ -40,11 +40,12 @@ export default function KnowledgeHomePage() {
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2">
-        {curated.map((c) => (
+        {curated.map((c, i) => (
           <Link
             key={c}
             href={`/knowledge/${enc(c)}`}
-            className="group rounded-2xl border border-black/10 bg-white/50 p-5 shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-white"
+            className="stagger-in group rounded-2xl border border-black/10 bg-white/50 p-5 shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-white"
+            style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="font-medium capitalize tracking-tight">{c.replace(/-/g, " ")}</div>

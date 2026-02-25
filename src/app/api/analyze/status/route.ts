@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs";
 import {
   readStatus,
-  isProcessAlive,
+  isStaleRunning,
   isValidVideoId,
   statusPath,
   analysisPath,
@@ -14,6 +14,7 @@ export const runtime = "nodejs";
 type StatusResponse = {
   status: "idle" | "running" | "complete" | "failed";
   startedAt?: string;
+  elapsedSeconds?: number;
   error?: string;
 };
 
@@ -30,24 +31,32 @@ export async function GET(req: Request) {
   let response: StatusResponse;
 
   if (status?.status === "running") {
-    // Verify PID is alive
-    if (!isProcessAlive(status.pid)) {
-      // Process died — update status file
+    // Check for stale "running" status (server restart recovery)
+    if (isStaleRunning(status)) {
       const updated = {
         ...status,
         status: "failed" as const,
         completedAt: new Date().toISOString(),
-        error: "process died unexpectedly",
+        error: "analysis timed out (stale running status)",
       };
       atomicWriteJson(statusPath(videoId), updated);
       response = { status: "failed", startedAt: status.startedAt, error: updated.error };
     } else {
-      response = { status: "running", startedAt: status.startedAt };
+      const elapsed = Math.round((Date.now() - new Date(status.startedAt).getTime()) / 1000);
+      response = {
+        status: "running",
+        startedAt: status.startedAt,
+        elapsedSeconds: elapsed,
+      };
     }
   } else if (status?.status === "complete") {
     response = { status: "complete", startedAt: status.startedAt };
   } else if (status?.status === "failed") {
-    response = { status: "failed", startedAt: status.startedAt, error: status.error };
+    response = {
+      status: "failed",
+      startedAt: status.startedAt,
+      error: status.error,
+    };
   } else {
     // No status.json — check if analysis.md exists
     try {

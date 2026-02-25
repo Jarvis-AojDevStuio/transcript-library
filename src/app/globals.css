@@ -5,6 +5,9 @@
   --fg: #171312;
   --muted: rgba(23, 19, 18, 0.62);
   --card: rgba(255, 255, 255, 0.65);
+  --accent: #ffd082;
+  --accent-subtle: #9ad2ff;
+  --ink: #2c2420;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,6 +16,9 @@
     --fg: #f6f1e8;
     --muted: rgba(246, 241, 232, 0.62);
     --card: rgba(255, 255, 255, 0.06);
+    --accent: #ffd082;
+    --accent-subtle: #9ad2ff;
+    --ink: #f6f1e8;
   }
 }
 
@@ -28,8 +34,7 @@ body {
 }
 
 .font-display {
-  /* gallery placard: clean grotesk with a little character */
-  font-family: "Avenir Next", Avenir, "Helvetica Neue", "Gill Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display), "Avenir Next", Avenir, ui-serif, Georgia, serif;
   letter-spacing: -0.01em;
 }
 
@@ -219,4 +224,20 @@ body {
 
 .md pre :where(.hljs-comment) {
   color: color-mix(in oklab, var(--fg) 55%, transparent);
+}
+
+/* ---------- Entrance animation ---------- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger-in {
+  animation: fadeUp 0.35s ease-out both;
 }

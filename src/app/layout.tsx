@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { Instrument_Serif } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
 import SidebarSkeleton from "@/components/SidebarSkeleton";
 import "./globals.css";
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
   title: "Transcript Library",
@@ -16,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={instrumentSerif.variable}>
       <body>
         <div className="min-h-dvh bg-[var(--bg)] text-[var(--fg)]">
           <header className="sticky top-0 z-40 border-b border-black/10 bg-[color:var(--bg)/0.75] backdrop-blur">

@@ -46,7 +46,7 @@ export default async function Sidebar() {
               <Link
                 key={c.channel}
                 href={`/channel/${enc(c.channel)}`}
-                className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+                className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/8 transition-colors duration-150"
               >
                 <div className="min-w-0">
                   <div className="truncate font-medium text-[color:var(--fg)/0.92]">
@@ -57,7 +57,7 @@ export default async function Sidebar() {
                     {c.lastPublishedDate ? <span>• {c.lastPublishedDate}</span> : null}
                   </div>
                 </div>
-                <div className="shrink-0 rounded-full bg-black/5 px-2 py-1 text-[11px] text-[var(--muted)] group-hover:text-[var(--fg)]">
+                <div className="shrink-0 rounded-full bg-black/5 px-2 py-1 text-[11px] text-[var(--muted)] group-hover:text-[var(--fg)] group-hover:bg-black/10 transition-colors duration-100">
                   Open
                 </div>
               </Link>
@@ -90,7 +90,7 @@ export default async function Sidebar() {
                 <Link
                   key={c}
                   href={`/knowledge/${enc(c)}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/5"
+                  className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/8 transition-colors duration-150"
                 >
                   <div className="min-w-0 truncate font-medium text-[color:var(--fg)/0.92] capitalize">
                     {c.replace(/-/g, " ")}

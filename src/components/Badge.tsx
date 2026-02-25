@@ -15,7 +15,7 @@ const tones: Record<Tone, string> = {
     "border-black/10 bg-white/55 text-[color:var(--fg)/0.78]",
   // a deliberate “ink stamp” for status
   ink:
-    "border-black/15 bg-black text-white",
+    "border-[var(--ink)]/20 bg-[var(--ink)] text-[var(--accent)]",
   // very quiet, almost placeholder
   quiet:
     "border-black/10 bg-black/5 text-[var(--muted)]",

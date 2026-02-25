@@ -39,11 +39,12 @@ export default async function Page() {
             </Link>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            {recentKnowledge.map((k) => (
+            {recentKnowledge.map((k, i) => (
               <Link
                 key={`${k.category}/${k.relPath}`}
                 href={`/knowledge/${encodeURIComponent(k.category)}/${encodeURIComponent(k.relPath)}`}
-                className="rounded-xl border border-black/10 bg-white/45 px-4 py-3 hover:bg-white/70"
+                className="stagger-in rounded-xl border border-black/10 bg-white/45 px-4 py-3 hover:bg-white/70"
+                style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="truncate text-sm font-medium">{k.title}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -57,11 +58,12 @@ export default async function Page() {
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {channels.map((c) => (
+        {channels.map((c, i) => (
           <a
             key={c.channel}
             href={`/channel/${slug(c.channel)}`}
-            className="group rounded-2xl border border-black/10 bg-[color:var(--card)] p-5 shadow-[0_1px_0_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+            className="stagger-in group rounded-2xl border border-black/10 bg-[color:var(--card)] p-5 shadow-[0_1px_0_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+            style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
