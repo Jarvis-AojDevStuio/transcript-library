@@ -6,12 +6,13 @@ function enc(s: string) {
   return encodeURIComponent(s);
 }
 
-export default function KnowledgeCategoryPage({
+export default async function KnowledgeCategoryPage({
   params,
 }: {
-  params: { category: string };
+  params: Promise<{ category: string }>;
 }) {
-  const category = decodeURIComponent(params.category);
+  const { category: rawCategory } = await params;
+  const category = decodeURIComponent(rawCategory);
   const files = listKnowledgeMarkdown(category);
 
   return (
@@ -19,10 +20,10 @@ export default function KnowledgeCategoryPage({
       <div className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
               Knowledge
             </div>
-            <h1 className="mt-1 font-display text-2xl tracking-tight capitalize">
+            <h1 className="font-display mt-1 text-2xl tracking-tight capitalize">
               {category.replace(/-/g, " ")}
             </h1>
           </div>
@@ -35,7 +36,9 @@ export default function KnowledgeCategoryPage({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge tone="neutral">{files.length} note{files.length === 1 ? "" : "s"}</Badge>
+          <Badge tone="neutral">
+            {files.length} note{files.length === 1 ? "" : "s"}
+          </Badge>
         </div>
       </div>
 
@@ -47,9 +50,7 @@ export default function KnowledgeCategoryPage({
               href={`/knowledge/${enc(category)}/${enc(rel)}`}
               className="block rounded-2xl px-4 py-3 hover:bg-black/5"
             >
-              <div className="font-medium tracking-tight">
-                {titleFromRelPath(rel)}
-              </div>
+              <div className="font-medium tracking-tight">{titleFromRelPath(rel)}</div>
               <div className="mt-1">
                 <Badge tone="quiet">{rel}</Badge>
               </div>

@@ -1,15 +1,25 @@
 {
   "hooks": {
-    "Setup": [
+    "SessionStart": [
       {
-        "matcher": "init",
-        "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/setup_init.ts\"",
-        "timeout": 120
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/setup_init.ts\"",
+            "timeout": 120
+          }
+        ]
       },
       {
-        "matcher": "maintenance",
-        "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/setup_maintenance.ts\"",
-        "timeout": 60
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/setup_maintenance.ts\"",
+            "timeout": 60
+          }
+        ]
       }
     ]
   }

@@ -3,8 +3,7 @@
 import { spawnSync } from "child_process";
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
-  new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+  process.env.CLAUDE_PROJECT_DIR || new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const logPath = `${projectDir}/.claude/hooks/setup.maintenance.log`;
 
 const log: string[] = [];
@@ -18,7 +17,7 @@ try {
   const hookInput = JSON.parse(input);
 
   appendLog(`Maintenance hook started for: ${projectDir}`);
-  appendLog(`Hook event: ${hookInput?.hookEventName || "Setup"}`);
+  appendLog(`Hook event: ${hookInput?.hook_event_name || "SessionStart"}`);
 
   // Update dependencies
   appendLog("Updating dependencies with bun...");
@@ -42,9 +41,7 @@ try {
     stdio: ["pipe", "pipe", "pipe"],
     timeout: 30_000,
   });
-  appendLog(
-    `Type check: ${tsc.status === 0 ? "passed" : `failed (exit ${tsc.status})`}`,
-  );
+  appendLog(`Type check: ${tsc.status === 0 ? "passed" : `failed (exit ${tsc.status})`}`);
 
   // Lint check
   appendLog("Running lint...");
@@ -53,16 +50,14 @@ try {
     stdio: ["pipe", "pipe", "pipe"],
     timeout: 30_000,
   });
-  appendLog(
-    `Lint: ${lint.status === 0 ? "passed" : `failed (exit ${lint.status})`}`,
-  );
+  appendLog(`Lint: ${lint.status === 0 ? "passed" : `failed (exit ${lint.status})`}`);
 
   // Write log
   await Bun.write(logPath, log.join("\n") + "\n");
 
   const output = {
     hookSpecificOutput: {
-      hookEventName: "Setup",
+      hookEventName: "SessionStart",
       additionalContext: `Maintenance complete: update ${update.status === 0 ? "ok" : "fail"}, tsc ${tsc.status === 0 ? "ok" : "fail"}, lint ${lint.status === 0 ? "ok" : "fail"}. Log: ${logPath}`,
     },
   };

@@ -3,8 +3,7 @@
 import { spawnSync } from "child_process";
 
 const projectDir =
-  process.env.CLAUDE_PROJECT_DIR ||
-  new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+  process.env.CLAUDE_PROJECT_DIR || new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const envFile = process.env.CLAUDE_ENV_FILE;
 const logPath = `${projectDir}/.claude/hooks/setup.init.log`;
 
@@ -19,7 +18,7 @@ try {
   const hookInput = JSON.parse(input);
 
   appendLog(`Setup init hook started for: ${projectDir}`);
-  appendLog(`Hook event: ${hookInput?.hookEventName || "Setup"}`);
+  appendLog(`Hook event: ${hookInput?.hook_event_name || "SessionStart"}`);
 
   // Install dependencies with bun
   appendLog("Installing dependencies with bun...");
@@ -48,7 +47,7 @@ try {
   // Output structured JSON
   const output = {
     hookSpecificOutput: {
-      hookEventName: "Setup",
+      hookEventName: "SessionStart",
       additionalContext: `Init complete: bun install ${install.status === 0 ? "succeeded" : "failed"}. Log: ${logPath}`,
     },
   };

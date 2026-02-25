@@ -23,7 +23,6 @@ export type AnalysisMeta = {
 // --- globalThis concurrency tracking ---
 
 declare global {
-  // eslint-disable-next-line no-var -- globalThis augmentation requires var for HMR persistence
   var __analysisRunningCount: number | undefined;
 }
 
@@ -82,7 +81,11 @@ export function atomicWriteJson(filePath: string, obj: unknown): void {
     fs.renameSync(tmp, filePath);
   } catch (err) {
     fs.closeSync(fd);
-    try { fs.unlinkSync(tmp); } catch { /* best-effort cleanup */ }
+    try {
+      fs.unlinkSync(tmp);
+    } catch {
+      /* best-effort cleanup */
+    }
     throw err;
   }
 }

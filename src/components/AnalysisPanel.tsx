@@ -19,6 +19,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mountedRef = useRef(true);
   const pollStartRef = useRef<number>(0);
+  const pollRef = useRef<() => void>(undefined);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -70,14 +71,18 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         if (elapsed > 60_000) delay = 10_000;
         else if (elapsed > 30_000) delay = 5000;
 
-        timeoutRef.current = setTimeout(poll, delay);
+        timeoutRef.current = setTimeout(() => pollRef.current?.(), delay);
       })
       .catch(() => {
         if (!mountedRef.current) return;
         // Back off on error
-        timeoutRef.current = setTimeout(poll, 5000);
+        timeoutRef.current = setTimeout(() => pollRef.current?.(), 5000);
       });
-  }, [fetchStatus]);
+  }, [fetchStatus, router]);
+
+  useEffect(() => {
+    pollRef.current = poll;
+  }, [poll]);
 
   const startAnalysis = async () => {
     setStatus("running");
@@ -104,13 +109,13 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     }
   };
 
-  // If initial status is running, start polling immediately
+  // If initial status is running, start polling immediately (deferred to avoid synchronous setState in effect)
   useEffect(() => {
     if (initialStatus === "running") {
       pollStartRef.current = Date.now();
-      poll();
+      timeoutRef.current = setTimeout(() => pollRef.current?.(), 0);
     }
-  }, [initialStatus, poll]);
+  }, [initialStatus]);
 
   const hasExistingInsight = initialInsight !== null;
 
@@ -152,11 +157,7 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         )}
       </button>
 
-      {error && (
-        <div className="text-right text-xs text-red-600">
-          {error}
-        </div>
-      )}
+      {error && <div className="text-right text-xs text-red-600">{error}</div>}
     </div>
   );
 }
