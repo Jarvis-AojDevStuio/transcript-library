@@ -21,10 +21,14 @@ The `dec()` function in `channel/page.tsx` and `video/[videoId]/page.tsx` calls 
 
 ```typescript
 function dec(s: string): string {
-  try { return decodeURIComponent(s); }
-  catch { return s; }
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 ```
+
 - **Effort:** Small
 - **Risk:** Low
 

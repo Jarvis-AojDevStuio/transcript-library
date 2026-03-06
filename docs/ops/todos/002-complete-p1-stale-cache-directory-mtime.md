@@ -23,25 +23,30 @@ This means re-running analysis on an existing video (overwriting `data/insights/
 ## Proposed Solutions
 
 ### Option A: Remove caches, rely on simplicity (Recommended for local-only app)
+
 Remove `_insightSetCache` and `_recentInsightsCache`. The Sidebar is already behind Suspense. These functions scan a small number of directories — the perf gain is minimal.
+
 - **Pros:** Eliminates bug entirely, reduces code complexity
 - **Cons:** Slightly more I/O per request
 - **Effort:** Small
 - **Risk:** Low
 
 ### Option B: Add TTL-based invalidation alongside mtime
+
 ```typescript
 const TTL_MS = 5000; // 5 seconds
 if (_cache && _cache.dirMtimeMs === st.mtimeMs && Date.now() - _cache.builtAt < TTL_MS) {
   return _cache.data;
 }
 ```
+
 - **Pros:** Catches stale data within 5 seconds
 - **Cons:** Adds complexity, arbitrary TTL
 - **Effort:** Small
 - **Risk:** Low
 
 ### Option C: Track max mtime of analysis.md files as cache key
+
 - **Pros:** Precise invalidation
 - **Cons:** Requires statting all insight files (N stat calls on every check)
 - **Effort:** Medium
@@ -59,8 +64,8 @@ Option A for a local-only tool.
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                             |
+| ---------- | ------------------------------ | ------------------------------------- |
 | 2026-02-22 | Created from code review PR #1 | 4/5 agents flagged this independently |
 
 ## Resources

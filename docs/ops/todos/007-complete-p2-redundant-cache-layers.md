@@ -20,6 +20,7 @@ dependencies: ["001"]
 ## Proposed Solutions
 
 Keep `React.cache()` on public API functions + the original `_cache` on `readVideoRows()`. Remove `_videosCache` from `groupVideos()`.
+
 - **Effort:** Small
 - **Risk:** Low
 

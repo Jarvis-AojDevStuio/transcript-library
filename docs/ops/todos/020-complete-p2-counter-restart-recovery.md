@@ -21,6 +21,7 @@ dependencies: []
 ## Proposed Solutions
 
 ### Option A: Lazy initialization from disk (Recommended)
+
 **Pros:** Self-heals on restart, simple implementation
 **Effort:** Small (20 minutes)
 **Risk:** Low
@@ -44,6 +45,6 @@ export function getRunningCount(): number {
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                                 |
+| ---------- | ------------------------------ | ----------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | Architecture + Performance agents flagged |

@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-03-06T02:28:00Z",
+  "repo_path": "/Users/openclaw-ekene/.openclaw/workspace/transcript-library",
+  "classified_framework": "feature-based + ops-docs boundary (hybrid)",
+  "framework_fit": "HIGH",
+  "visibility": "public",
+  "ai_tooling": [".claude/", "CLAUDE.md", "justfile"],
+  "summary": {
+    "total_checks": 8,
+    "pass": 8,
+    "fail": 0,
+    "warn": 0,
+    "info": 0,
+    "score": "8/8"
+  },
+  "checks": [
+    {
+      "category": "structural",
+      "name": "allowed-top-level",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "Top-level app runtime and operational docs are now cleanly bounded."
+    },
+    {
+      "category": "structural",
+      "name": "required-files",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "README.md, .gitignore, LICENSE present."
+    },
+    {
+      "category": "structural",
+      "name": "no-junk-root",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "No stray temp/junk files at root."
+    },
+    {
+      "category": "structural",
+      "name": "folder-placement",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "CI and docs placement valid."
+    },
+    {
+      "category": "structural",
+      "name": "max-depth",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "No problematic nesting from scan."
+    },
+    {
+      "category": "unknown-bucket",
+      "name": "misc-overflow",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "No misc/unknown overflow."
+    },
+    {
+      "category": "unknown-bucket",
+      "name": "uncategorized-ratio",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "No uncategorized catch-all drift."
+    },
+    {
+      "category": "module-boundary",
+      "name": "module-boundary-applicability",
+      "severity": "INFO",
+      "status": "PASS",
+      "message": "src/modules/ not present; module checks N/A in this workflow."
+    }
+  ]
+}

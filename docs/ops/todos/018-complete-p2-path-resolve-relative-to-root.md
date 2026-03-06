@@ -21,6 +21,7 @@ In `src/app/api/raw/route.ts` line 14, `path.resolve(p)` resolves user-supplied 
 ## Proposed Solutions
 
 ### Option A: Resolve against root (Recommended)
+
 **Effort:** Small (1 minute)
 **Risk:** None
 
@@ -35,6 +36,6 @@ const resolved = path.resolve(root, p);
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                                |
+| ---------- | ------------------------------ | ---------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | Security sentinel flagged CWD dependency |

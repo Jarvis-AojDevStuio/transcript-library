@@ -22,12 +22,14 @@ In `src/app/api/sync-hook/route.ts` (lines 170-176), the batch loop waits only o
 ## Proposed Solutions
 
 ### Option A: Proper wait-for-slot with backoff (Recommended)
+
 **Pros:** Actually processes all videos, correct behavior
 **Cons:** Webhook response returns quickly but processing takes hours
 **Effort:** Medium (30 minutes)
 **Risk:** Low
 
 ### Option B: Spawn what fits, return honest count
+
 **Pros:** Simple, transparent
 **Cons:** Requires re-invocation for remaining videos
 **Effort:** Small (15 minutes)
@@ -45,6 +47,6 @@ Option B for simplicity — spawn up to MAX_CONCURRENT, return `{ started: 2, sk
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                                |
+| ---------- | ------------------------------ | ---------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | 3/6 agents flagged batch processing flaw |

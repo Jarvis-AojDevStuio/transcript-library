@@ -21,6 +21,7 @@ In `src/app/api/analyze/route.ts` (lines 76-79) and `src/app/api/sync-hook/route
 ## Proposed Solutions
 
 ### Option A: Move PID check before stdin write (Recommended)
+
 **Pros:** Eliminates non-null assertion entirely, prevents crash on spawn failure
 **Cons:** None
 **Effort:** Small (5 minutes)
@@ -34,7 +35,7 @@ if (child.pid === undefined) {
   return;
 }
 // Now safe: spawn succeeded
-child.stdin.write(prompt);  // No ! needed
+child.stdin.write(prompt); // No ! needed
 child.stdin.end();
 ```
 
@@ -50,6 +51,6 @@ Option A — resolved automatically if #014 is implemented (shared function)
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                                 |
+| ---------- | ------------------------------ | ----------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | TypeScript reviewer caught ordering issue |

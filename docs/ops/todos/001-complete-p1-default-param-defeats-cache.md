@@ -24,6 +24,7 @@ Additionally, the `rows` parameter creates a cache correctness hazard: the cache
 ## Proposed Solutions
 
 ### Option A: Remove the `rows` parameter entirely (Recommended)
+
 ```typescript
 export function groupVideos(): Map<string, Video> {
   const p = csvPath();
@@ -33,12 +34,14 @@ export function groupVideos(): Map<string, Video> {
   // ...rest unchanged
 }
 ```
+
 - **Pros:** Eliminates double stat, removes cache correctness hazard, simplest fix
 - **Cons:** Removes flexibility (but no callers use it)
 - **Effort:** Small
 - **Risk:** Low
 
 ### Option B: Make parameter optional with nullish coalescing
+
 ```typescript
 export function groupVideos(rows?: VideoRow[]): Map<string, Video> {
   const p = csvPath();
@@ -48,6 +51,7 @@ export function groupVideos(rows?: VideoRow[]): Map<string, Video> {
   // ...
 }
 ```
+
 - **Pros:** Preserves flexibility
 - **Cons:** Keeps unnecessary API surface
 - **Effort:** Small
@@ -70,8 +74,8 @@ Option A — remove the `rows` parameter.
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                             |
+| ---------- | ------------------------------ | ------------------------------------- |
 | 2026-02-22 | Created from code review PR #1 | 3/5 agents independently flagged this |
 
 ## Resources

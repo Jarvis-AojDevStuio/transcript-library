@@ -15,12 +15,14 @@ In `src/app/video/[videoId]/page.tsx` line 31, `initialStatus` only checks if `a
 ## Proposed Fix
 
 Read `status.json` in the server component:
+
 ```typescript
 import { readStatus, isProcessAlive } from "@/lib/analysis";
 const statusFile = readStatus(video.videoId);
 let initialStatus: Status = "idle";
 if (insight) initialStatus = "complete";
-else if (statusFile?.status === "running" && isProcessAlive(statusFile.pid)) initialStatus = "running";
+else if (statusFile?.status === "running" && isProcessAlive(statusFile.pid))
+  initialStatus = "running";
 ```
 
 ## Acceptance Criteria
@@ -30,6 +32,6 @@ else if (statusFile?.status === "running" && isProcessAlive(statusFile.pid)) ini
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                       |
+| ---------- | ------------------------------ | ------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | Architecture strategist flagged |

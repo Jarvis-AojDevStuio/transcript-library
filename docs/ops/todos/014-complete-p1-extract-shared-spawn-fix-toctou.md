@@ -26,6 +26,7 @@ This is the **single most impactful finding** — fixing it resolves duplication
 ## Proposed Solutions
 
 ### Option A: Extract to `src/lib/analysis.ts` (Recommended)
+
 **Pros:** Single source of truth, consistent behavior, easy to test
 **Cons:** Small refactor effort
 **Effort:** Medium (1-2 hours)
@@ -43,6 +44,7 @@ export function spawnAnalysis(
 ```
 
 ### Option B: Sync-hook calls analyze route internally
+
 **Pros:** Zero duplication
 **Cons:** Tighter coupling, harder to customize per-route behavior
 **Effort:** Small
@@ -55,6 +57,7 @@ Option A — extract shared function to `src/lib/analysis.ts`
 ## Technical Details
 
 **Affected files:**
+
 - `src/lib/analysis.ts` — add `spawnAnalysis()` function
 - `src/app/api/analyze/route.ts` — replace inline spawn with shared function call
 - `src/app/api/sync-hook/route.ts` — delete `spawnAnalysis()`, import from analysis.ts
@@ -69,8 +72,8 @@ Option A — extract shared function to `src/lib/analysis.ts`
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                             |
+| ---------- | ------------------------------ | ------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | 5/6 agents flagged this independently |
 
 ## Resources

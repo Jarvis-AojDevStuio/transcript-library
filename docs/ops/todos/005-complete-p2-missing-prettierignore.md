@@ -20,11 +20,13 @@ No `.prettierignore` file exists. The lint-staged config runs `prettier --write`
 ## Proposed Solutions
 
 Create `.prettierignore`:
+
 ```
 package-lock.json
 .next/
 node_modules/
 ```
+
 - **Effort:** Small (1 file)
 - **Risk:** Low
 

@@ -19,6 +19,6 @@ In `src/components/AnalysisPanel.tsx` line 56, `window.location.reload()` trigge
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings          |
+| ---------- | ------------------------------ | ------------------ |
 | 2026-02-22 | Created from PR #3 code review | 3/6 agents flagged |

@@ -21,6 +21,7 @@ In `src/lib/analysis.ts` line 103, `JSON.parse(raw) as StatusFile` provides zero
 ## Proposed Solutions
 
 ### Option A: Add type guard validation (Recommended)
+
 **Pros:** Runtime safety, graceful degradation on corrupt files
 **Cons:** ~10 lines of code
 **Effort:** Small (10 minutes)
@@ -46,6 +47,6 @@ function isStatusFile(val: unknown): val is StatusFile {
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                               |
+| ---------- | ------------------------------ | --------------------------------------- |
 | 2026-02-22 | Created from PR #3 code review | TypeScript reviewer flagged unsafe cast |

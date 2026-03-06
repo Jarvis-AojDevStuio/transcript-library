@@ -22,12 +22,14 @@ dependencies: []
 ## Proposed Solutions
 
 ### Option A: Add isValidVideoId() guard (Recommended)
+
 ```typescript
 export function insightPaths(videoId: string) {
   if (!isValidVideoId(videoId)) throw new Error(`Invalid videoId: ${videoId}`);
   // ...existing code
 }
 ```
+
 - **Effort:** Small (2 lines per function)
 - **Risk:** Low
 
@@ -39,6 +41,6 @@ export function insightPaths(videoId: string) {
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                |
+| ---------- | ------------------------------ | ------------------------ |
 | 2026-02-22 | Created from code review PR #1 | Defense-in-depth missing |

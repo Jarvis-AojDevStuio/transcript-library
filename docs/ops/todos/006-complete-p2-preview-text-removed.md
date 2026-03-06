@@ -21,12 +21,16 @@ The channel page previously displayed a 2-line preview snippet of each video's i
 ## Proposed Solutions
 
 ### Option A: Document and accept removal
+
 Add to PR description: "Preview text on channel page removed to eliminate N+1 file reads."
+
 - **Effort:** Trivial
 - **Risk:** None (if intentional)
 
 ### Option B: Pre-compute previews into the insight cache
+
 Add a `preview` field to the insight set cache, computed once on cold start.
+
 - **Effort:** Medium
 - **Risk:** Low
 

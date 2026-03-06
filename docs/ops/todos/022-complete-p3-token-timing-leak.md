@@ -15,6 +15,7 @@ In `src/app/api/sync-hook/route.ts` lines 28-30, the early return on `provided.l
 ## Proposed Fix
 
 Use HMAC-then-compare to normalize buffer lengths:
+
 ```typescript
 const provided = crypto.createHmac("sha256", "key").update(match[1]).digest();
 const expected = crypto.createHmac("sha256", "key").update(expectedToken).digest();
@@ -27,6 +28,6 @@ return crypto.timingSafeEqual(provided, expected);
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                 |
+| ---------- | ------------------------------ | ------------------------- |
 | 2026-02-22 | Created from PR #3 code review | Security sentinel flagged |

@@ -19,6 +19,6 @@ dependencies: ["014"]
 
 ## Work Log
 
-| Date | Action | Learnings |
-|------|--------|-----------|
+| Date       | Action                         | Learnings                   |
+| ---------- | ------------------------------ | --------------------------- |
 | 2026-02-22 | Created from PR #3 code review | Simplicity reviewer flagged |

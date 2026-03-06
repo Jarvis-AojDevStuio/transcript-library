@@ -6,15 +6,14 @@ Browse-first library for playlist transcripts + curated insights.
 
 - UI: `apps/transcript-library` (Next.js)
 - Transcript index + source files: `playlist-transcripts/`
-- Insights output: `apps/transcript-library/data/insights/<videoId>/analysis.md`
-- Planning: `apps/transcript-library/Plans/PRD.md`
+- Insights output: `data/insights/<videoId>/analysis.md`
+- Planning: `docs/ops/plans/PRD.md`
 
 ## Dev
 
 ### Getting started
 
 ```bash
-cd apps/transcript-library
 cp .env.example .env.local   # set PLAYLIST_TRANSCRIPTS_REPO
 bun install
 bun run dev -- --port 3939
@@ -40,4 +39,4 @@ bunx prettier --check .  # Format check
 
 ## Plan / PRD
 
-See `Plans/PRD.md`.
+See `docs/ops/plans/PRD.md`.
