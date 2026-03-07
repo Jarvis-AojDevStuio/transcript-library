@@ -156,7 +156,9 @@ export default async function VideoPage({ params }: { params: Promise<{ videoId:
                       <li key={p.chunk} className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate">Part {p.chunk}</div>
-                          <div className="text-xs text-[var(--muted)]">{p.wordCount} words</div>
+                          <div className="text-xs text-[var(--muted)]">
+                            {p.wordCount} {p.wordCount === 1 ? "word" : "words"}
+                          </div>
                         </div>
                         <a
                           className="shrink-0 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-[var(--muted)] hover:text-[var(--fg)]"

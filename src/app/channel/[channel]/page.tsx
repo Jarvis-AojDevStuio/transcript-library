@@ -28,7 +28,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ channe
             <div className="text-xs text-[var(--muted)]">Channel</div>
             <h1 className="font-display text-2xl tracking-tight">{channelName}</h1>
             <div className="mt-2 text-sm text-[var(--muted)]">
-              {videos.length} videos • newest first
+              {videos.length} {videos.length === 1 ? "video" : "videos"} • newest first
             </div>
           </div>
           <Link
@@ -55,7 +55,9 @@ export default async function ChannelPage({ params }: { params: Promise<{ channe
                   <div className="font-display truncate text-lg tracking-tight">{v.title}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge tone="neutral">{v.topic}</Badge>
-                    <Badge tone="neutral">{v.totalChunks} parts</Badge>
+                    <Badge tone="neutral">
+                      {v.totalChunks} {v.totalChunks === 1 ? "part" : "parts"}
+                    </Badge>
                     {insightExists ? (
                       <Badge tone="ink">Insight</Badge>
                     ) : (

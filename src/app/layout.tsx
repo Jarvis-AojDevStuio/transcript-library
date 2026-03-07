@@ -28,7 +28,7 @@ export default function RootLayout({
                 <span className="text-xs text-[var(--muted)]">browse-first</span>
               </div>
               <nav className="flex items-center gap-3 text-sm">
-                <Link className="text-[var(--muted)] hover:text-[var(--fg)]" href="/">
+                <Link className="text-[var(--muted)] hover:text-[var(--fg)]" href="/#channels">
                   Channels
                 </Link>
                 <Link className="text-[var(--muted)] hover:text-[var(--fg)]" href="/knowledge">

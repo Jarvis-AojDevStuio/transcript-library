@@ -18,11 +18,7 @@ function enc(s: string) {
   return encodeURIComponent(s);
 }
 
-export default function ChannelGrid({
-  channels,
-}: {
-  channels: ChannelSummary[];
-}) {
+export default function ChannelGrid({ channels }: { channels: ChannelSummary[] }) {
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -66,12 +62,14 @@ export default function ChannelGrid({
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <div className="truncate font-display text-base leading-tight tracking-tight">
+                <div className="font-display truncate text-base leading-tight tracking-tight">
                   {c.channel}
                 </div>
                 <div className="mt-1 text-xs text-[var(--muted)]">
-                  {c.videoCount} videos
-                  {c.topics.length ? ` • ${c.topics.length} topics` : ""}
+                  {c.videoCount} {c.videoCount === 1 ? "video" : "videos"}
+                  {c.topics.length
+                    ? ` • ${c.topics.length} ${c.topics.length === 1 ? "topic" : "topics"}`
+                    : ""}
                 </div>
               </div>
               <Badge tone="neutral">{c.lastPublishedDate || "—"}</Badge>
@@ -84,9 +82,7 @@ export default function ChannelGrid({
                     {t}
                   </Badge>
                 ))}
-                {c.topics.length > 6 ? (
-                  <Badge tone="quiet">+{c.topics.length - 6}</Badge>
-                ) : null}
+                {c.topics.length > 6 ? <Badge tone="quiet">+{c.topics.length - 6}</Badge> : null}
               </div>
             ) : null}
           </a>

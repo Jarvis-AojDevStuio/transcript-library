@@ -57,7 +57,7 @@ export default async function Page() {
         </section>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <section id="channels" className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {channels.map((c) => (
           <a
             key={c.channel}
@@ -68,7 +68,8 @@ export default async function Page() {
               <div>
                 <div className="font-display text-lg leading-tight tracking-tight">{c.channel}</div>
                 <div className="mt-1 text-xs text-[var(--muted)]">
-                  {c.videoCount} videos • {c.topics.length} topics
+                  {c.videoCount} {c.videoCount === 1 ? "video" : "videos"} • {c.topics.length}{" "}
+                  {c.topics.length === 1 ? "topic" : "topics"}
                 </div>
               </div>
               <Badge tone="neutral">{c.lastPublishedDate || "—"}</Badge>

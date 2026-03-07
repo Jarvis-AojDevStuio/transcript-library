@@ -53,7 +53,9 @@ export default async function Sidebar() {
                     {c.channel}
                   </div>
                   <div className="mt-0.5 flex items-center gap-2 text-xs text-[var(--muted)]">
-                    <span>{c.videoCount} videos</span>
+                    <span>
+                      {c.videoCount} {c.videoCount === 1 ? "video" : "videos"}
+                    </span>
                     {c.lastPublishedDate ? <span>• {c.lastPublishedDate}</span> : null}
                   </div>
                 </div>
