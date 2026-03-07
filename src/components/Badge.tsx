@@ -1,6 +1,7 @@
 import React from "react";
+import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "ink" | "quiet";
+type Tone = "neutral" | "quiet" | "amber";
 
 type Props = {
   children: React.ReactNode;
@@ -10,27 +11,20 @@ type Props = {
 };
 
 const tones: Record<Tone, string> = {
-  // museum label energy: hairline border, near-white fill, crisp type
-  neutral:
-    "border-black/10 bg-white/55 text-[color:var(--fg)/0.78]",
-  // a deliberate “ink stamp” for status
-  ink:
-    "border-black/15 bg-black text-white",
-  // very quiet, almost placeholder
-  quiet:
-    "border-black/10 bg-black/5 text-[var(--muted)]",
+  neutral: "border-[var(--line)] bg-white/75 text-[var(--muted-strong)]",
+  quiet: "border-transparent bg-[var(--panel)] text-[var(--muted)]",
+  amber: "border-[var(--accent)]/15 bg-[var(--accent)]/10 text-[var(--accent-strong)]",
 };
 
-export function Badge({ children, tone = "neutral", className = "", title }: Props) {
+export function Badge({ children, tone = "neutral", className, title }: Props) {
   return (
     <span
       title={title}
-      className={
-        "inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-[11px] " +
-        "font-medium uppercase tracking-[0.18em] tabular-nums " +
-        tones[tone] +
-        (className ? ` ${className}` : "")
-      }
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]",
+        tones[tone],
+        className,
+      )}
     >
       {children}
     </span>

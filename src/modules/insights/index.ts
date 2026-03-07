@@ -17,4 +17,12 @@
  * Error Behavior:
  * - Returns fallback/none values on missing files.
  */
-export { insightPaths, hasInsight, readInsightMarkdown, makePreview } from "@/lib/insights";
+export {
+  getInsightArtifacts,
+  hasInsight,
+  insightPaths,
+  makePreview,
+  readInsightLogTail,
+  readInsightMarkdown,
+  readRunMetadata,
+} from "@/lib/insights";

@@ -1,42 +1,83 @@
 # Transcript Library
 
-Browse-first library for playlist transcripts + curated insights.
+Private internal transcript and insight workspace for a small friend group.
 
-## What’s here
+This repository is not a SaaS product. It is a proof of concept for a shared YouTube playlist workflow where friends can watch videos in-app, read transcripts, and generate AI analysis using provider CLIs they already have access to.
 
-- UI: `apps/transcript-library` (Next.js)
-- Transcript index + source files: `playlist-transcripts/`
-- Insights output: `data/insights/<videoId>/analysis.md`
-- Planning: `docs/ops/plans/PRD.md`
+## What it does
 
-## Dev
+- browses a local transcript corpus from `PLAYLIST_TRANSCRIPTS_REPO`
+- plays YouTube videos inside the app
+- generates headless analysis through a provider abstraction
+- stores insight artifacts under `data/insights/<videoId>/`
 
-### Getting started
+## Current provider model
 
-```bash
-cp .env.example .env.local   # set PLAYLIST_TRANSCRIPTS_REPO
-bun install
-bun run dev -- --port 3939
+- `claude-cli`
+- `codex-cli`
+
+Provider selection happens on the server with `ANALYSIS_PROVIDER`, not in the UI.
+
+## Core routes
+
+- `POST /api/analyze?videoId=...`
+- `GET /api/analyze/status?videoId=...`
+- `GET /api/insight?videoId=...`
+- `GET /api/insight/stream?videoId=...`
+
+## Artifact layout
+
+```text
+data/insights/<videoId>/
+  analysis.md
+  <slugified-video-title>.md
+  video-metadata.json
+  run.json
+  worker-stdout.txt
+  worker-stderr.txt
+  status.json
 ```
 
-Open: http://127.0.0.1:3939
+Notes:
 
-### Commands
+- `videoId` stays the canonical lookup key
+- the slugged markdown file is for human inspection
+- metadata caches are schema-versioned so heuristic changes can invalidate stale entries
+
+## Commands
 
 ```bash
-bun run dev        # Start dev server
-bun run build      # Production build
-bun run lint       # ESLint
-bunx tsc --noEmit   # Type check
-bunx prettier --check .  # Format check
+just start
+just prod-start
+just build
+just lint
+just typecheck
+just backfill-insights
 ```
 
-### Environment variables
+## Environment
 
-| Variable                    | Purpose                           | Default              |
-| --------------------------- | --------------------------------- | -------------------- |
-| `PLAYLIST_TRANSCRIPTS_REPO` | Path to playlist-transcripts repo | (hardcoded fallback) |
+Required:
 
-## Plan / PRD
+```bash
+PLAYLIST_TRANSCRIPTS_REPO=/absolute/path/to/playlist-transcripts
+```
 
-See `docs/ops/plans/PRD.md`.
+Optional:
+
+```bash
+ANALYSIS_PROVIDER=claude-cli
+ANALYSIS_MODEL=...
+CLAUDE_ANALYSIS_MODEL=...
+CODEX_ANALYSIS_MODEL=...
+SYNC_TOKEN=...
+```
+
+## Docs
+
+- [System overview](./docs/architecture/system-overview.md)
+- [Analysis runtime](./docs/architecture/analysis-runtime.md)
+- [Worker topology](./docs/architecture/worker-topology.md)
+- [Artifact schema](./docs/architecture/artifact-schema.md)
+- [Provider runbook](./docs/operations/provider-runbook.md)
+- [RepoArchitect assessment](./docs/architecture/repo-architect-assessment.md)

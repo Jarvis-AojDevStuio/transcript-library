@@ -1,149 +1,176 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { listChannels, groupVideos } from "@/modules/catalog";
 import { curatedKnowledgeCategories, listKnowledgeCategories } from "@/modules/knowledge";
 import { listRecentInsights } from "@/modules/recent";
+import { formatCount } from "@/lib/utils";
 
-function enc(s: string) {
-  return encodeURIComponent(s);
+function enc(value: string) {
+  return encodeURIComponent(value);
+}
+
+function SparkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Z" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+      <path d="M8 6.5v11l9-5.5-9-5.5Z" />
+    </svg>
+  );
 }
 
 export default async function Sidebar() {
   const channels = listChannels();
-  const top = channels.slice(0, 18);
-
-  const allKnowledge = listKnowledgeCategories();
-  const knowledge = curatedKnowledgeCategories(allKnowledge).slice(0, 8);
-
+  const featuredChannels = channels.slice(0, 8);
+  const knowledge = curatedKnowledgeCategories(listKnowledgeCategories()).slice(0, 7);
   const videoMap = groupVideos();
-  const recentInsights = listRecentInsights(8).map((r) => {
-    const v = videoMap.get(r.videoId);
+  const recentInsights = listRecentInsights(6).map((item) => {
+    const video = videoMap.get(item.videoId);
     return {
-      ...r,
-      title: v?.title ?? r.videoId,
-      channel: v?.channel,
+      ...item,
+      title: video?.title ?? item.videoId,
+      channel: video?.channel ?? "Unknown",
     };
   });
 
+  const totalVideos = channels.reduce((sum, channel) => sum + channel.videoCount, 0);
+  const topicCount = channels.reduce((sum, channel) => sum + channel.topics.length, 0);
+
   return (
-    <aside className="sticky top-[72px] hidden h-[calc(100dvh-72px)] w-full overflow-auto pr-2 lg:block">
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
-              Library
+    <aside className="hidden xl:block">
+      <Card className="sticky top-6 overflow-hidden border-white/10 [background:var(--sidebar-bg)] text-[var(--sidebar-fg)] shadow-[var(--shadow-sidebar)]">
+        <CardHeader className="gap-5 border-b border-white/10 pb-6">
+          <div className="flex items-center justify-between gap-3">
+            <Badge tone="quiet" className="border-white/10 bg-white/10 text-white/70">
+              Signal Desk
+            </Badge>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white/80">
+              <SparkIcon />
             </div>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-white/8 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">Workspace</div>
+            <CardTitle className="mt-3 text-[2rem] text-white">Watch. Read. Synthesize.</CardTitle>
+            <p className="mt-3 text-sm leading-6 text-white/65">
+              Desktop-first research cockpit for reviewing YouTube transcripts alongside generated analysis.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Catalog</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{totalVideos}</div>
+              <div className="text-xs text-white/50">indexed videos</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">Topics</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{topicCount}</div>
+              <div className="text-xs text-white/50">channel tags</div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6 p-6">
+          <nav className="space-y-2">
             <Link
               href="/"
-              className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-[var(--muted)] hover:text-[var(--fg)]"
+              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white transition hover:bg-white/12"
             >
-              All channels
+              <span>Overview</span>
+              <span className="text-white/45">01</span>
             </Link>
-          </div>
-
-          <div className="space-y-1">
-            {top.map((c) => (
-              <Link
-                key={c.channel}
-                href={`/channel/${enc(c.channel)}`}
-                className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-              >
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-[color:var(--fg)/0.92]">
-                    {c.channel}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-[var(--muted)]">
-                    <span>
-                      {c.videoCount} {c.videoCount === 1 ? "video" : "videos"}
-                    </span>
-                    {c.lastPublishedDate ? <span>• {c.lastPublishedDate}</span> : null}
-                  </div>
-                </div>
-                <div className="shrink-0 rounded-full bg-black/5 px-2 py-1 text-[11px] text-[var(--muted)] group-hover:text-[var(--fg)]">
-                  Open
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {channels.length > top.length ? (
-            <div className="mt-3 text-xs text-[var(--muted)]">
-              Showing {top.length} of {channels.length}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
-              Knowledge
-            </div>
             <Link
               href="/knowledge"
-              className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-[var(--muted)] hover:text-[var(--fg)]"
+              className="flex items-center justify-between rounded-2xl px-4 py-3 text-sm text-white/72 transition hover:bg-white/8 hover:text-white"
             >
-              Browse
+              <span>Knowledge base</span>
+              <span className="text-white/35">02</span>
             </Link>
-          </div>
+          </nav>
 
-          {knowledge.length ? (
-            <div className="space-y-1">
-              {knowledge.map((c) => (
-                <Link
-                  key={c}
-                  href={`/knowledge/${enc(c)}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm hover:bg-black/5"
-                >
-                  <div className="min-w-0 truncate font-medium text-[color:var(--fg)/0.92] capitalize">
-                    {c.replace(/-/g, " ")}
-                  </div>
-                  <Badge tone="neutral">Open</Badge>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-black/10 bg-white/50 p-3 text-sm">
-              <div className="font-medium">Tip</div>
-              <div className="mt-1 text-[13px] leading-6 text-[var(--muted)]">
-                Drop markdown into <code className="rounded bg-black/5 px-1">knowledge/</code> and
-                it’ll show up here.
-              </div>
-            </div>
-          )}
-        </div>
+          <Separator className="bg-white/10" />
 
-        <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
-              Recent insights
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Featured channels</div>
+              <Badge tone="quiet" className="border-white/10 bg-white/8 text-white/65">
+                {formatCount(channels.length, "channel")}
+              </Badge>
             </div>
-          </div>
-
-          {recentInsights.length ? (
             <div className="space-y-2">
-              {recentInsights.map((r) => (
+              {featuredChannels.map((channel) => (
                 <Link
-                  key={r.videoId}
-                  href={`/video/${enc(r.videoId)}`}
-                  className="block rounded-xl px-3 py-2 hover:bg-black/5"
+                  key={channel.channel}
+                  href={`/channel/${enc(channel.channel)}`}
+                  className="block rounded-2xl border border-transparent px-4 py-3 transition hover:border-white/10 hover:bg-white/8"
                 >
-                  <div className="truncate text-sm font-medium text-[color:var(--fg)/0.92]">
-                    {r.title}
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {r.channel ? <Badge tone="neutral">{r.channel}</Badge> : null}
-                    <Badge tone="ink">Insight</Badge>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-white">{channel.channel}</div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {formatCount(channel.videoCount, "video")}
+                      </div>
+                    </div>
+                    <span className="text-xs text-white/35">{channel.lastPublishedDate || "-"}</span>
                   </div>
                 </Link>
               ))}
             </div>
-          ) : (
-            <div className="rounded-xl border border-black/10 bg-white/50 p-3 text-sm text-[var(--muted)]">
-              Nothing analyzed yet.
+          </section>
+
+          <section className="space-y-3">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Knowledge stacks</div>
+            <div className="flex flex-wrap gap-2">
+              {knowledge.map((category) => (
+                <Link key={category} href={`/knowledge/${enc(category)}`}>
+                  <Badge tone="quiet" className="border-white/10 bg-white/8 text-white/70">
+                    {category.replace(/-/g, " ")}
+                  </Badge>
+                </Link>
+              ))}
             </div>
-          )}
-        </div>
-      </div>
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Recent analysis</div>
+              <div className="text-xs text-white/35">Live library</div>
+            </div>
+            <div className="space-y-2">
+              {recentInsights.length ? (
+                recentInsights.map((item) => (
+                  <Link
+                    key={item.videoId}
+                    href={`/video/${enc(item.videoId)}`}
+                    className="flex items-start gap-3 rounded-2xl border border-transparent px-4 py-3 transition hover:border-white/10 hover:bg-white/8"
+                  >
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/75">
+                      <PlayIcon />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-white">{item.title}</div>
+                      <div className="mt-1 truncate text-xs text-white/45">{item.channel}</div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-white/6 p-4 text-sm leading-6 text-white/55">
+                  Run analysis on any video to populate this queue.
+                </div>
+              )}
+            </div>
+          </section>
+        </CardContent>
+      </Card>
     </aside>
   );
 }

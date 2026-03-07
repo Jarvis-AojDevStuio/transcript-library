@@ -1,24 +1,26 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 export default function SidebarSkeleton() {
   return (
-    <aside className="sticky top-[72px] hidden h-[calc(100dvh-72px)] w-full overflow-auto pr-2 lg:block">
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-          <div className="mb-3 h-3 w-16 animate-pulse rounded bg-black/5" />
-          <div className="space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-xl bg-black/5" />
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-          <div className="mb-3 h-3 w-20 animate-pulse rounded bg-black/5" />
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-9 animate-pulse rounded-xl bg-black/5" />
-            ))}
-          </div>
-        </div>
-      </div>
+    <aside className="hidden xl:block">
+      <Card className="sticky top-6 overflow-hidden [background:var(--sidebar-bg)] text-[var(--sidebar-fg)] shadow-[var(--shadow-sidebar)]">
+        <CardHeader className="gap-4 border-b border-white/10 pb-5">
+          <div className="skeleton-shimmer h-4 w-28 rounded-full bg-white/10" />
+          <div className="skeleton-shimmer h-20 rounded-[24px] bg-white/10" />
+        </CardHeader>
+        <CardContent className="space-y-6 p-6">
+          {Array.from({ length: 3 }).map((_, groupIndex) => (
+            <div key={groupIndex} className="space-y-3">
+              <div className="skeleton-shimmer h-3 w-20 rounded-full bg-white/10" />
+              <div className="space-y-2">
+                {Array.from({ length: 4 }).map((_, itemIndex) => (
+                  <div key={itemIndex} className="skeleton-shimmer h-12 rounded-2xl bg-white/8" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </aside>
   );
 }

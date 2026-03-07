@@ -1,5 +1,17 @@
 import fs from "node:fs";
-import { insightDir, analysisPath, insightsBaseDir } from "@/lib/analysis";
+import path from "node:path";
+import {
+  insightDir,
+  analysisPath,
+  insightsBaseDir,
+  legacyStderrLogPath,
+  legacyStdoutLogPath,
+  metadataCachePath,
+  readRunMetadata,
+  runMetadataPath,
+  stderrLogPath,
+  stdoutLogPath,
+} from "@/lib/analysis";
 import { curateYouTubeAnalyzer } from "@/lib/curation";
 
 const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{6,11}$/;
@@ -83,6 +95,90 @@ export function readInsightMarkdown(videoId: string): {
 
   return { kind: "none", markdown: null, path: null };
 }
+
+export function getInsightArtifacts(videoId: string): {
+  canonicalPath: string;
+  canonicalFileName: string;
+  displayPath: string | null;
+  displayFileName: string | null;
+  metadataPath: string;
+  metadataFileName: string;
+  runPath: string;
+  runFileName: string;
+  stdoutPath: string;
+  stdoutFileName: string;
+  stderrPath: string;
+  stderrFileName: string;
+} {
+  const dir = insightDir(videoId);
+  let displayPath: string | null = null;
+
+  try {
+    const entries = fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "analysis.md")
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (entries[0]) {
+      displayPath = path.join(dir, entries[0].name);
+    }
+  } catch {}
+
+  const canonicalPath = analysisPath(videoId);
+  const metaPath = metadataCachePath(videoId);
+  const runPath = runMetadataPath(videoId);
+  const outPath = fs.existsSync(stdoutLogPath(videoId)) ? stdoutLogPath(videoId) : legacyStdoutLogPath(videoId);
+  const errPath = fs.existsSync(stderrLogPath(videoId)) ? stderrLogPath(videoId) : legacyStderrLogPath(videoId);
+
+  return {
+    canonicalPath,
+    canonicalFileName: path.basename(canonicalPath),
+    displayPath,
+    displayFileName: displayPath ? path.basename(displayPath) : null,
+    metadataPath: metaPath,
+    metadataFileName: path.basename(metaPath),
+    runPath,
+    runFileName: path.basename(runPath),
+    stdoutPath: outPath,
+    stdoutFileName: path.basename(outPath),
+    stderrPath: errPath,
+    stderrFileName: path.basename(errPath),
+  };
+}
+
+function readTail(filePath: string, maxBytes: number): string {
+  try {
+    const stat = fs.statSync(filePath);
+    const start = Math.max(0, stat.size - maxBytes);
+    const fd = fs.openSync(filePath, "r");
+    try {
+      const buffer = Buffer.alloc(stat.size - start);
+      fs.readSync(fd, buffer, 0, buffer.length, start);
+      return buffer.toString("utf8");
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return "";
+  }
+}
+
+export function readInsightLogTail(
+  videoId: string,
+  maxBytes = 12_000,
+): {
+  stdout: string;
+  stderr: string;
+} {
+  const stdoutPath = fs.existsSync(stdoutLogPath(videoId)) ? stdoutLogPath(videoId) : legacyStdoutLogPath(videoId);
+  const stderrPath = fs.existsSync(stderrLogPath(videoId)) ? stderrLogPath(videoId) : legacyStderrLogPath(videoId);
+  return {
+    stdout: readTail(stdoutPath, maxBytes),
+    stderr: readTail(stderrPath, maxBytes),
+  };
+}
+
+export { readRunMetadata };
 
 function stripFrontmatter(md: string) {
   if (!md.startsWith("---")) return md;

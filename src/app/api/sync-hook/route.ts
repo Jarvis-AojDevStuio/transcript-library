@@ -60,10 +60,12 @@ export async function POST(req: Request) {
       const spawned = spawnAnalysis(
         videoId,
         {
+          videoId,
           title: video.title,
           channel: video.channel,
           topic: video.topic,
           publishedDate: video.publishedDate,
+          transcriptPartPath: absTranscriptPath(video.parts[0]?.filePath ?? ""),
         },
         transcript,
         "[sync-hook]",

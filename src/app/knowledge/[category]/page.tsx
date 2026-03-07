@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import { listKnowledgeMarkdown, titleFromRelPath } from "@/modules/knowledge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { listKnowledgeCategories, listKnowledgeMarkdown, titleFromRelPath } from "@/modules/knowledge";
+import { formatCount } from "@/lib/utils";
 
-function enc(s: string) {
-  return encodeURIComponent(s);
+function enc(value: string) {
+  return encodeURIComponent(value);
+}
+
+export function generateStaticParams() {
+  return listKnowledgeCategories().map((category) => ({ category }));
 }
 
 export default async function KnowledgeCategoryPage({
@@ -16,53 +23,49 @@ export default async function KnowledgeCategoryPage({
   const files = listKnowledgeMarkdown(category);
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
+    <div className="space-y-8 pb-12">
+      <section className="relative overflow-hidden rounded-[32px] border border-[var(--line)] [background:var(--surface-hero)] px-8 py-9 shadow-[var(--shadow-card)]">
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="text-[11px] font-medium tracking-[0.18em] text-[var(--muted)] uppercase">
-              Knowledge
-            </div>
-            <h1 className="font-display mt-1 text-2xl tracking-tight capitalize">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[var(--muted)]">Knowledge category</div>
+            <h1 className="mt-4 font-display text-5xl tracking-[-0.05em] capitalize text-[var(--ink)]">
               {category.replace(/-/g, " ")}
             </h1>
+            <p className="mt-4 text-base leading-7 text-[var(--muted-strong)]">
+              {formatCount(files.length, "document")} available in this category.
+            </p>
           </div>
-          <Link
-            href="/knowledge"
-            className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-[var(--muted)] hover:text-[var(--fg)]"
-          >
-            All categories
+          <Link href="/knowledge">
+            <Button variant="outline">All categories</Button>
           </Link>
         </div>
+      </section>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge tone="neutral">
-            {files.length} note{files.length === 1 ? "" : "s"}
-          </Badge>
-        </div>
-      </div>
+      <section className="space-y-4">
+        {files.map((relPath) => (
+          <Link key={relPath} href={`/knowledge/${enc(category)}/${enc(relPath)}`}>
+            <Card className="transition duration-200 hover:-translate-y-1 hover:border-[var(--accent)]/35 hover:shadow-[0_30px_60px_rgba(15,23,42,0.08)]">
+              <CardContent className="flex flex-col gap-4 p-6 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">Document</div>
+                  <h2 className="mt-3 text-2xl font-medium tracking-[-0.03em] text-[var(--ink)]">
+                    {titleFromRelPath(relPath)}
+                  </h2>
+                </div>
+                <Badge tone="quiet">{relPath}</Badge>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
 
-      <div className="rounded-3xl border border-black/10 bg-white/50 p-2">
-        <div className="divide-y divide-black/5">
-          {files.map((rel) => (
-            <Link
-              key={rel}
-              href={`/knowledge/${enc(category)}/${enc(rel)}`}
-              className="block rounded-2xl px-4 py-3 hover:bg-black/5"
-            >
-              <div className="font-medium tracking-tight">{titleFromRelPath(rel)}</div>
-              <div className="mt-1">
-                <Badge tone="quiet">{rel}</Badge>
-              </div>
-            </Link>
-          ))}
-          {!files.length ? (
-            <div className="px-4 py-6 text-sm text-[var(--muted)]">
-              No markdown notes found in this category.
-            </div>
-          ) : null}
-        </div>
-      </div>
+        {!files.length ? (
+          <Card className="border-dashed">
+            <CardContent className="p-8 text-sm leading-7 text-[var(--muted)]">
+              No notes yet. Add markdown files to this category folder to surface them here.
+            </CardContent>
+          </Card>
+        ) : null}
+      </section>
     </div>
   );
 }

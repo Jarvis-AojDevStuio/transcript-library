@@ -13,10 +13,13 @@
  * - insightsBaseDir()
  * - statusPath(videoId)
  * - analysisPath(videoId)
+ * - displayAnalysisPath(videoId, title)
+ * - metadataCachePath(videoId)
+ * - runMetadataPath(videoId)
  * - atomicWriteJson(filePath, obj)
  *
  * Exported IO Types:
- * - StatusFile, AnalysisMeta
+ * - StatusFile, AnalysisMeta, RunFile, AnalysisProvider
  *
  * Side Effects:
  * - File IO, process spawning, process signals.
@@ -35,7 +38,15 @@ export {
   insightsBaseDir,
   statusPath,
   analysisPath,
+  displayAnalysisPath,
+  metadataCachePath,
+  runMetadataPath,
   atomicWriteJson,
+  stdoutLogPath,
+  stderrLogPath,
+  readRunMetadata,
   type StatusFile,
   type AnalysisMeta,
+  type RunFile,
+  type AnalysisProvider,
 } from "@/lib/analysis";
