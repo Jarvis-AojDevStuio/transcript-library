@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import { groupVideos, absTranscriptPath } from "@/lib/catalog";
-import {
-  readStatus,
-  isProcessAlive,
-  analysisPath,
-  spawnAnalysis,
-} from "@/lib/analysis";
+import { groupVideos, absTranscriptPath } from "@/modules/catalog";
+import { readStatus, isProcessAlive, analysisPath, spawnAnalysis } from "@/modules/analysis";
 
 export const runtime = "nodejs";
 
@@ -64,7 +59,14 @@ export async function POST(req: Request) {
 
       const spawned = spawnAnalysis(
         videoId,
-        { title: video.title, channel: video.channel, topic: video.topic, publishedDate: video.publishedDate },
+        {
+          videoId,
+          title: video.title,
+          channel: video.channel,
+          topic: video.topic,
+          publishedDate: video.publishedDate,
+          transcriptPartPath: absTranscriptPath(video.parts[0]?.filePath ?? ""),
+        },
         transcript,
         "[sync-hook]",
       );

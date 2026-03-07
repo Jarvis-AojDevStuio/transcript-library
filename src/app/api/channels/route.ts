@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listChannels } from "@/lib/catalog";
+import { listChannels } from "@/modules/catalog";
 
 export const runtime = "nodejs";
 

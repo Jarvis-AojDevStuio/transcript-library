@@ -81,7 +81,7 @@ const appDir = process.cwd();
 const dataDir = path.join(appDir, "data");
 const queueDir = path.join(dataDir, "queue");
 const failedDir = path.join(queueDir, "failed");
-const artifactsDir = path.join(appDir, "artifacts");
+const artifactsDir = path.join(appDir, "docs", "ops", "artifacts");
 
 fs.mkdirSync(queueDir, { recursive: true });
 fs.mkdirSync(failedDir, { recursive: true });
@@ -164,12 +164,12 @@ const summary = {
 };
 
 const md = `# Nightly insights\n\n- at: ${summary.at}\n- limit: ${summary.limit}\n- totalVideos: ${summary.totalVideos}\n- missingBefore: ${summary.missingBefore}\n- enqueued: ${summary.enqueued}\n- processed: ${summary.processed}\n- newFailed: ${summary.newFailed}\n\n## Worklist\n\n${toDo
-  .map((v) => `- ${v.videoId} — ${v.title} (${v.channel})`) 
+  .map((v) => `- ${v.videoId} — ${v.title} (${v.channel})`)
   .join("\n")}\n`;
 
 const outFile = path.join(
   artifactsDir,
-  `nightly-insights_${new Date().toISOString().slice(0, 10)}.md`
+  `nightly-insights_${new Date().toISOString().slice(0, 10)}.md`,
 );
 fs.writeFileSync(outFile, md);
 

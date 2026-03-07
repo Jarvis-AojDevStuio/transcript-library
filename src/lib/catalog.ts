@@ -35,10 +35,13 @@ export type ChannelSummary = {
 };
 
 function repoRoot(): string {
-  return (
-    process.env.PLAYLIST_TRANSCRIPTS_REPO ||
-    "/Users/aojdevstudio/projects/clawd/playlist-transcripts"
-  );
+  const repo = process.env.PLAYLIST_TRANSCRIPTS_REPO;
+  if (!repo) {
+    throw new Error(
+      "PLAYLIST_TRANSCRIPTS_REPO is not set. Add it to .env.local pointing to your playlist-transcripts repo.",
+    );
+  }
+  return repo;
 }
 
 function csvPath(): string {

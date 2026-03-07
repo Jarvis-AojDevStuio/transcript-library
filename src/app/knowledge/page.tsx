@@ -1,75 +1,73 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   curatedKnowledgeCategories,
   knowledgeExists,
   listKnowledgeCategories,
-} from "@/lib/knowledge";
+} from "@/modules/knowledge";
 
-function enc(s: string) {
-  return encodeURIComponent(s);
+function enc(value: string) {
+  return encodeURIComponent(value);
 }
 
 export default function KnowledgeHomePage() {
   if (!knowledgeExists()) {
     return (
-      <div className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6">
-        <h1 className="font-display text-2xl tracking-tight">Knowledge</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-          No <code className="rounded bg-black/5 px-1">knowledge/</code> folder found in this app.
-        </p>
-      </div>
+      <Card className="max-w-3xl">
+        <CardContent className="p-8">
+          <h1 className="font-display text-4xl tracking-[-0.04em] text-[var(--ink)]">Knowledge</h1>
+          <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
+            No <code className="rounded-xl bg-[var(--panel)] px-2 py-1 text-[var(--accent-strong)]">knowledge/</code> directory was found for this app.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
-  const all = listKnowledgeCategories();
-  const curated = curatedKnowledgeCategories(all);
-  const extras = all.filter((c) => !curated.includes(c));
+  const allCategories = listKnowledgeCategories();
+  const curated = curatedKnowledgeCategories(allCategories);
+  const extras = allCategories.filter((category) => !curated.includes(category));
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="font-display text-2xl tracking-tight">Knowledge</h1>
-          <div className="text-xs text-[var(--muted)]">Local notes • curated</div>
-        </div>
-        <p className="mt-3 max-w-[70ch] text-sm leading-6 text-[var(--muted)]">
-          This is your hand-written library. Categories are intentionally curated—fast to browse,
-          easy to keep tidy.
+    <div className="space-y-8 pb-12">
+      <div className="mb-8 pt-2">
+        <h1 className="font-display text-3xl tracking-[-0.04em] text-[var(--ink)]">Knowledge</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          {allCategories.length} categories, {curated.length} curated
         </p>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        {curated.map((c) => (
-          <Link
-            key={c}
-            href={`/knowledge/${enc(c)}`}
-            className="group rounded-2xl border border-black/10 bg-white/50 p-5 shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-white"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-medium capitalize tracking-tight">{c.replace(/-/g, " ")}</div>
-              <Badge tone="neutral">Open</Badge>
-            </div>
-            <div className="mt-2 text-sm text-[var(--muted)]">
-              Browse notes and summaries.
-            </div>
+      <section className="grid gap-5 xl:grid-cols-2">
+        {curated.map((category) => (
+          <Link key={category} href={`/knowledge/${enc(category)}`}>
+            <Card className="h-full transition duration-200 hover:bg-[var(--warm-soft)] hover:border-[var(--accent)]/35 hover:shadow-[0_30px_60px_rgba(15,23,42,0.08)]">
+              <CardContent className="p-7">
+                <h2 className="mt-4 font-display text-4xl tracking-[-0.04em] capitalize text-[var(--ink)]">
+                  {category.replace(/-/g, " ")}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                  Open the folder and read the documents in the same editorial workspace used for videos.
+                </p>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </section>
 
       {extras.length ? (
-        <section className="rounded-3xl border border-black/10 bg-[color:var(--card)] p-6">
-          <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-            Other folders
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {extras.map((c) => (
-              <Link key={c} href={`/knowledge/${enc(c)}`}>
-                <Badge tone="neutral">{c}</Badge>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <Card>
+          <CardContent className="p-7">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[var(--muted)]">Additional folders</div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {extras.map((category) => (
+                <Link key={category} href={`/knowledge/${enc(category)}`}>
+                  <Badge tone="quiet">{category}</Badge>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
     </div>
   );

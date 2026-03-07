@@ -7,7 +7,7 @@ import {
   statusPath,
   analysisPath,
   atomicWriteJson,
-} from "@/lib/analysis";
+} from "@/modules/analysis";
 
 export const runtime = "nodejs";
 

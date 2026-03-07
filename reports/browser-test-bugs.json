@@ -1,0 +1,97 @@
+{
+  "test_date": "2026-03-07",
+  "test_branch": "chore/repoarchitect-full-workflow",
+  "app_url": "http://localhost:3939",
+  "tester": "PAI/agent-browser",
+  "summary": {
+    "pages_tested": 6,
+    "bugs_found": 4,
+    "severity_breakdown": { "critical": 1, "medium": 1, "low": 2 }
+  },
+  "bugs": [
+    {
+      "id": "BUG-001",
+      "severity": "critical",
+      "title": "App crashes without .env.local — hardcoded fallback path is wrong",
+      "page": "/",
+      "description": "Homepage throws ENOENT runtime error on first load when PLAYLIST_TRANSCRIPTS_REPO env var is missing. The hardcoded fallback path '/Users/aojdevstudio/projects/clawd/playlist-transcripts' does not exist on any machine except the original developer's. App is completely unusable without manual .env.local creation.",
+      "error": "ENOENT: no such file or directory, stat '/Users/aojdevstudio/projects/clawd/playlist-transcripts/youtube-transcripts/index/videos.csv'",
+      "file": "src/lib/catalog.ts",
+      "line": 127,
+      "function": "groupVideos → csvPath",
+      "fix": "Remove hardcoded fallback path. If PLAYLIST_TRANSCRIPTS_REPO is not set, show a helpful error message or empty state instead of crashing. Alternatively, add .env.example with a placeholder and document the required setup.",
+      "screenshot": "/tmp/tl-01-homepage.png"
+    },
+    {
+      "id": "BUG-002",
+      "severity": "low",
+      "title": "Plural grammar bug — '1 videos', '1 parts', '1 topics' throughout app",
+      "page": "/, /channel/*, all channel cards",
+      "description": "When a count is 1, the app still shows plural nouns: '1 videos', '1 parts', '1 topics'. Affects sidebar channel list, channel cards on homepage, channel detail page video cards, and video detail page transcript parts. Over 60 instances visible across the app.",
+      "affected_components": [
+        { "file": "src/components/Sidebar.tsx", "text": "N videos" },
+        { "file": "src/app/page.tsx", "text": "N videos • N topics" },
+        { "file": "src/app/channel/[channel]/page.tsx", "text": "N parts" }
+      ],
+      "fix": "Add a pluralize helper: (n, word) => `${n} ${n === 1 ? word : word + 's'}` and apply to all count displays.",
+      "screenshot": "/tmp/tl-03-channel.png"
+    },
+    {
+      "id": "BUG-003",
+      "severity": "medium",
+      "title": "Channels nav link points to homepage instead of dedicated route",
+      "page": "all pages (nav bar)",
+      "description": "The 'Channels' link in the top navigation bar navigates to '/' (homepage) rather than a dedicated /channels route. This is confusing because the homepage shows mixed content (recent knowledge, channel cards, library sidebar) rather than a focused channels view. The Knowledge link correctly goes to /knowledge.",
+      "current_behavior": "Channels link → / (homepage with mixed content)",
+      "expected_behavior": "Channels link → /channels (dedicated channel listing) or at minimum scroll/focus to the channels section",
+      "fix": "Either create a /channels route with a focused channel grid, or rename the nav link to 'Home' to match its actual destination.",
+      "screenshot": "/tmp/tl-02-homepage-fixed.png"
+    },
+    {
+      "id": "BUG-004",
+      "severity": "low",
+      "title": "All videos show 'NO INSIGHT' — no pre-generated insights exist",
+      "page": "/channel/[channel]",
+      "description": "Every video card on channel pages shows a 'NO INSIGHT' badge. While not a code bug per se, it indicates the analysis pipeline has never been run against the transcript corpus. The 'Run analysis' button exists on video pages but requires manual triggering per video. For a library with 90+ channels and 100+ videos, this makes the curated insight feature appear broken or empty.",
+      "fix": "Consider running a batch analysis pass, or adding a 'Run all missing' batch endpoint. At minimum, add a message on the channel page explaining that insights can be generated per-video.",
+      "screenshot": "/tmp/tl-03-channel.png"
+    }
+  ],
+  "pages_verified_working": [
+    {
+      "page": "/",
+      "status": "works (after env fix)",
+      "notes": "Homepage loads with sidebar, recent knowledge, channel cards"
+    },
+    {
+      "page": "/channel/IndyDevDan",
+      "status": "works",
+      "notes": "Channel page loads with video list, badges, dates"
+    },
+    {
+      "page": "/video/[videoId]",
+      "status": "works",
+      "notes": "Video page shows metadata, Run analysis button, transcript parts with word counts"
+    },
+    { "page": "/knowledge", "status": "works", "notes": "Knowledge categories grid loads cleanly" },
+    {
+      "page": "/knowledge/technology",
+      "status": "works",
+      "notes": "166 notes listed with file paths"
+    },
+    {
+      "page": "/knowledge/technology/[article]",
+      "status": "works",
+      "notes": "Markdown renders correctly with headings, lists, formatting"
+    }
+  ],
+  "no_issues_found": [
+    "No console errors on any page",
+    "No broken links detected",
+    "No missing images",
+    "Sidebar navigation works correctly across all pages",
+    "Back button on channel page works",
+    "Knowledge breadcrumb navigation works",
+    "Markdown rendering in knowledge articles is correct"
+  ]
+}
