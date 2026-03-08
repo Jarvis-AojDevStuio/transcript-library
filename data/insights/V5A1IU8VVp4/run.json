@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "videoId": "V5A1IU8VVp4",
+  "provider": "claude-cli",
+  "command": "claude",
+  "args": [
+    "--dangerously-skip-permissions",
+    "-p"
+  ],
+  "status": "complete",
+  "startedAt": "2026-03-08T20:53:03.157Z",
+  "promptResolvedAt": "2026-03-08T20:53:03.145Z",
+  "pid": 23322,
+  "completedAt": "2026-03-08T20:54:34.905Z",
+  "exitCode": 0,
+  "artifacts": {
+    "canonicalFileName": "analysis.md",
+    "displayFileName": "i-studied-stripe-s-ai-agents-vibe-coding-is-already-dead.md",
+    "metadataFileName": "video-metadata.json",
+    "stdoutFileName": "worker-stdout.txt",
+    "stderrFileName": "worker-stderr.txt"
+  }
+}

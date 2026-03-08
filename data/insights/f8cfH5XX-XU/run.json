@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "videoId": "f8cfH5XX-XU",
+  "provider": "claude-cli",
+  "command": "claude",
+  "args": [
+    "--dangerously-skip-permissions",
+    "-p"
+  ],
+  "status": "complete",
+  "startedAt": "2026-03-08T20:52:48.980Z",
+  "promptResolvedAt": "2026-03-08T20:52:48.968Z",
+  "pid": 22616,
+  "completedAt": "2026-03-08T20:54:17.581Z",
+  "exitCode": 0,
+  "artifacts": {
+    "canonicalFileName": "analysis.md",
+    "displayFileName": "the-pi-coding-agent-the-only-real-claude-code-competitor.md",
+    "metadataFileName": "video-metadata.json",
+    "stdoutFileName": "worker-stdout.txt",
+    "stderrFileName": "worker-stderr.txt"
+  }
+}

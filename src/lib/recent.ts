@@ -1,6 +1,10 @@
 import fs from "node:fs";
-import path from "node:path";
-import { listKnowledgeCategories, KNOWLEDGE_ROOT, titleFromRelPath } from "@/lib/knowledge";
+import {
+  knowledgeMarkdownMtime,
+  listKnowledgeCategories,
+  listKnowledgeMarkdown,
+  titleFromRelPath,
+} from "@/modules/knowledge";
 import { insightsBaseDir, analysisPath } from "@/lib/analysis";
 
 export type RecentKnowledgeItem = {
@@ -10,47 +14,20 @@ export type RecentKnowledgeItem = {
   updatedAtMs: number;
 };
 
-function walk(dirAbs: string, relBase: string, out: RecentKnowledgeItem[], category: string) {
-  const entries = fs.readdirSync(dirAbs, { withFileTypes: true });
-  for (const e of entries) {
-    if (e.name.startsWith(".")) continue;
-    const abs = path.join(dirAbs, e.name);
-    const rel = relBase ? path.join(relBase, e.name) : e.name;
-
-    if (e.isDirectory()) {
-      walk(abs, rel, out, category);
-    } else if (e.isFile()) {
-      const lower = e.name.toLowerCase();
-      if (!lower.endsWith(".md") && !lower.endsWith(".markdown")) continue;
-      try {
-        const st = fs.statSync(abs);
-        out.push({
-          category,
-          relPath: rel,
-          title: titleFromRelPath(rel),
-          updatedAtMs: st.mtimeMs,
-        });
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-          console.debug("Unexpected error reading knowledge stat:", err);
-        }
-      }
-    }
-  }
-}
-
 export function listRecentKnowledge(limit = 8): RecentKnowledgeItem[] {
   const out: RecentKnowledgeItem[] = [];
   const cats = listKnowledgeCategories();
   for (const c of cats) {
-    const dir = path.join(KNOWLEDGE_ROOT, c);
-    try {
-      if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
-      walk(dir, "", out, c);
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-        console.debug("Unexpected error walking knowledge directory:", err);
-      }
+    const markdown = listKnowledgeMarkdown(c);
+    for (const rel of markdown) {
+      const updatedAtMs = knowledgeMarkdownMtime(c, rel);
+      if (updatedAtMs === null) continue;
+      out.push({
+        category: c,
+        relPath: rel,
+        title: titleFromRelPath(rel),
+        updatedAtMs,
+      });
     }
   }
 

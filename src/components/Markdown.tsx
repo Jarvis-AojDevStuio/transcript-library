@@ -55,7 +55,15 @@ export function Markdown({
   children: string | null | undefined;
   className?: string;
 }) {
-  const raw = children ?? "";
+  let raw = children ?? "";
+
+  // Strip outer ```md or ```markdown code fence wrapping
+  const mdFenceRe = /^```(?:md|markdown)\s*\n([\s\S]*)\n```\s*$/;
+  const fenceMatch = raw.match(mdFenceRe);
+  if (fenceMatch) {
+    raw = fenceMatch[1];
+  }
+
   const { frontmatter, content } = parseFrontmatter(raw);
 
   const title = frontmatter?.title;

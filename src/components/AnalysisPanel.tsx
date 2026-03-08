@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Status = "idle" | "running" | "complete" | "failed";
 
@@ -21,7 +23,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
   const pollStartRef = useRef<number>(0);
   const pollRef = useRef<() => void>(undefined);
 
-  // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -31,20 +32,18 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
   }, []);
 
   const fetchStatus = useCallback(async (): Promise<{ status: Status; error?: string }> => {
-    const res = await fetch(`/api/analyze/status?videoId=${encodeURIComponent(videoId)}`);
-    if (!res.ok) throw new Error("status fetch failed");
-    return res.json();
+    const response = await fetch(`/api/analyze/status?videoId=${encodeURIComponent(videoId)}`);
+    if (!response.ok) throw new Error("status fetch failed");
+    return response.json();
   }, [videoId]);
 
   const poll = useCallback(() => {
     if (!mountedRef.current) return;
 
     const elapsed = Date.now() - pollStartRef.current;
-
-    // 6-minute ceiling (server timeout is 5 min + 1 min buffer)
     if (elapsed > 360_000) {
       setStatus("failed");
-      setError("Analysis is taking longer than expected");
+      setError("Analysis is taking longer than expected.");
       return;
     }
 
@@ -55,18 +54,16 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
         if (data.status === "complete") {
           setStatus("complete");
           setError(null);
-          // Re-run server components to get the new insight
           router.refresh();
           return;
         }
 
         if (data.status === "failed") {
           setStatus("failed");
-          setError(data.error ?? "Analysis failed");
+          setError(data.error ?? "Analysis failed.");
           return;
         }
 
-        // Still running — schedule next poll with backoff
         let delay = 3000;
         if (elapsed > 60_000) delay = 10_000;
         else if (elapsed > 30_000) delay = 5000;
@@ -75,7 +72,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
       })
       .catch(() => {
         if (!mountedRef.current) return;
-        // Back off on error
         timeoutRef.current = setTimeout(() => pollRef.current?.(), 5000);
       });
   }, [fetchStatus, router]);
@@ -84,32 +80,6 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     pollRef.current = poll;
   }, [poll]);
 
-  const startAnalysis = async () => {
-    setStatus("running");
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/analyze?videoId=${encodeURIComponent(videoId)}`, {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("failed");
-        setError(data.error ?? "Failed to start analysis");
-        return;
-      }
-
-      // Start polling
-      pollStartRef.current = Date.now();
-      poll();
-    } catch {
-      setStatus("failed");
-      setError("Failed to start analysis");
-    }
-  };
-
-  // If initial status is running, start polling immediately (deferred to avoid synchronous setState in effect)
   useEffect(() => {
     if (initialStatus === "running") {
       pollStartRef.current = Date.now();
@@ -117,47 +87,71 @@ export function AnalysisPanel({ videoId, initialStatus, initialInsight }: Props)
     }
   }, [initialStatus]);
 
+  const startAnalysis = async () => {
+    setStatus("running");
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/analyze?videoId=${encodeURIComponent(videoId)}`, {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setStatus("failed");
+        setError(data.error ?? "Failed to start analysis.");
+        return;
+      }
+
+      pollStartRef.current = Date.now();
+      poll();
+    } catch {
+      setStatus("failed");
+      setError("Failed to start analysis.");
+    }
+  };
+
   const hasExistingInsight = initialInsight !== null;
 
-  const buttonLabel = (() => {
-    if (status === "running") return "Analyzing\u2026";
-    if (status === "failed") return "Retry analysis";
-    if (hasExistingInsight) return "Re-run analysis";
-    return "Run analysis";
-  })();
-
-  const buttonClass = (() => {
-    if (status === "running") {
-      return "rounded-full bg-black/50 px-4 py-2 text-sm text-white cursor-wait";
-    }
-    if (status === "failed") {
-      return "rounded-full bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700";
-    }
-    if (hasExistingInsight) {
-      return "rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--fg)]";
-    }
-    return "rounded-full bg-black px-4 py-2 text-sm text-white hover:bg-black/90";
-  })();
+  const buttonLabel =
+    status === "running"
+      ? "Generating analysis"
+      : status === "failed"
+        ? "Retry analysis"
+        : hasExistingInsight
+          ? "Refresh analysis"
+          : "Generate analysis";
 
   return (
-    <div className="flex shrink-0 flex-col items-end gap-2">
-      <button
-        type="button"
+    <div className="space-y-3">
+      <Button
         onClick={startAnalysis}
         disabled={status === "running"}
-        className={buttonClass}
+        className={cn(
+          "w-full justify-center rounded-2xl",
+          status === "running" && "bg-[var(--accent-strong)] text-white",
+          status === "failed" && "bg-[#a63f3a] text-white hover:bg-[#8d3430]",
+        )}
       >
         {status === "running" ? (
           <span className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/35 border-t-white" />
             {buttonLabel}
           </span>
         ) : (
           buttonLabel
         )}
-      </button>
+      </Button>
 
-      {error && <div className="text-right text-xs text-red-600">{error}</div>}
+      <div className="rounded-2xl border border-[var(--line)] bg-white/75 px-4 py-3 text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+        Status: <span className="text-[var(--ink)]">{status}</span>
+      </div>
+
+      {error ? (
+        <div className="rounded-2xl border border-[#d8b1aa] bg-[#fbe9e7] px-4 py-3 text-sm text-[#7b342f]">
+          {error}
+        </div>
+      ) : null}
     </div>
   );
 }

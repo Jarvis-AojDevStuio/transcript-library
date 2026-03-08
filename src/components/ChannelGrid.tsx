@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { Input } from "@/components/ui/input";
 
 export type ChannelSummary = {
   channel: string;
@@ -10,94 +12,97 @@ export type ChannelSummary = {
   lastPublishedDate?: string;
 };
 
-function norm(s: string): string {
-  return s.trim().toLowerCase();
+function norm(value: string): string {
+  return value.trim().toLowerCase();
 }
 
-function enc(s: string) {
-  return encodeURIComponent(s);
+function enc(value: string) {
+  return encodeURIComponent(value);
 }
 
 export default function ChannelGrid({
   channels,
+  analyzedByChannel = {},
 }: {
   channels: ChannelSummary[];
+  analyzedByChannel?: Record<string, number>;
 }) {
-  const [q, setQ] = useState("");
+  const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
-    const nq = norm(q);
-    if (!nq) return channels;
+    const normalized = norm(query);
+    if (!normalized) return channels;
 
-    return channels.filter((c) => {
-      const hay = `${c.channel} ${c.topics.join(" ")}`.toLowerCase();
-      return hay.includes(nq);
+    return channels.filter((channel) => {
+      const haystack = `${channel.channel} ${channel.topics.join(" ")}`.toLowerCase();
+      return haystack.includes(normalized);
     });
-  }, [channels, q]);
+  }, [channels, query]);
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
-          <Badge tone="quiet">{filtered.length} shown</Badge>
-          <Badge tone="quiet">{channels.length} total</Badge>
-        </div>
-
-        <div className="w-full sm:w-[340px]">
-          <label className="sr-only" htmlFor="channel-search">
-            Search channels
-          </label>
-          <input
-            id="channel-search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search channels or topics…"
-            className="w-full rounded-2xl border border-black/10 bg-white/55 px-4 py-2.5 text-sm shadow-[0_1px_0_rgba(0,0,0,0.05)] outline-none placeholder:text-[color:var(--fg)/0.35] focus:border-black/15 focus:bg-white/70"
-          />
-        </div>
+    <div className="space-y-5">
+      <div className="w-full max-w-md">
+        <label htmlFor="channel-search" className="sr-only">
+          Search channels
+        </label>
+        <Input
+          id="channel-search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search channels or topics..."
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {filtered.map((c) => (
-          <a
-            key={c.channel}
-            href={`/channel/${enc(c.channel)}`}
-            className="group rounded-2xl border border-black/10 bg-[color:var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="truncate font-display text-base leading-tight tracking-tight">
-                  {c.channel}
-                </div>
-                <div className="mt-1 text-xs text-[var(--muted)]">
-                  {c.videoCount} videos
-                  {c.topics.length ? ` • ${c.topics.length} topics` : ""}
-                </div>
-              </div>
-              <Badge tone="neutral">{c.lastPublishedDate || "—"}</Badge>
-            </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((channel) => {
+          const analyzed = analyzedByChannel[channel.channel] || 0;
+          return (
+            <Link
+              key={channel.channel}
+              href={`/channel/${enc(channel.channel)}`}
+              className="group cursor-pointer rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 transition duration-200 hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:bg-white/80 hover:shadow-[var(--shadow-card)]"
+            >
+              <h3 className="font-display text-[1.15rem] font-semibold leading-tight tracking-[-0.02em] text-[var(--ink)]">
+                {channel.channel}
+              </h3>
 
-            {c.topics.length ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {c.topics.slice(0, 6).map((t) => (
-                  <Badge key={t} tone="quiet">
-                    {t}
+              <div className="mt-2 flex gap-3 text-[13px] text-[var(--muted)]">
+                <span>
+                  <strong className="font-semibold text-[var(--ink)]">{channel.videoCount}</strong>{" "}
+                  {channel.videoCount === 1 ? "video" : "videos"}
+                </span>
+                <span>
+                  <strong className="font-semibold text-[var(--ink)]">{analyzed}</strong>{" "}
+                  analyzed
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {channel.topics.slice(0, 4).map((topic, i) => (
+                  <Badge
+                    key={topic}
+                    tone={i === 0 ? "amber" : "quiet"}
+                    className="text-[10px] px-2 py-0.5"
+                  >
+                    {topic}
                   </Badge>
                 ))}
-                {c.topics.length > 6 ? (
-                  <Badge tone="quiet">+{c.topics.length - 6}</Badge>
-                ) : null}
+                {channel.topics.length > 4 && (
+                  <Badge tone="quiet" className="text-[10px] px-2 py-0.5">
+                    +{channel.topics.length - 4}
+                  </Badge>
+                )}
               </div>
-            ) : null}
-          </a>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
-      {!filtered.length ? (
-        <div className="rounded-2xl border border-black/10 bg-white/45 p-6 text-sm text-[var(--muted)]">
-          No channels match <span className="font-medium text-[color:var(--fg)/0.85]">“{q}”</span>.
+      {!filtered.length && (
+        <div className="rounded-lg border border-dashed border-[var(--line)] bg-white/55 p-8 text-sm text-[var(--muted)]">
+          No channels match <span className="font-medium text-[var(--ink)]">{query}</span>.
         </div>
-      ) : null}
-    </section>
+      )}
+    </div>
   );
 }

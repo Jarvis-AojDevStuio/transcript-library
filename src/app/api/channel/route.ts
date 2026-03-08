@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listVideosByChannel } from "@/lib/catalog";
+import { listVideosByChannel } from "@/modules/catalog";
 
 export const runtime = "nodejs";
 

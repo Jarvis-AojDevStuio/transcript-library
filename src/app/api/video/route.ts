@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
-import { absTranscriptPath, getVideo } from "@/lib/catalog";
+import { absTranscriptPath, getVideo } from "@/modules/catalog";
 
 export const runtime = "nodejs";
 

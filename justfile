@@ -15,16 +15,21 @@ install:
   bun install
 
 # Start Next.js dev server
-dev:
-  bun run dev
+dev host="127.0.0.1" port="3000":
+  bun run dev -- --hostname {{host}} --port {{port}}
 
-# Build for production
+# Build for production using webpack (avoids the Next 16 Turbopack panic)
 build:
-  bun run build
+  bunx next build --webpack
 
-# Start production server
-start:
-  bun run start
+# Start the local app server
+start host="127.0.0.1" port="3000":
+  just dev {{host}} {{port}}
+
+# Start production server (builds first and allows host/port override)
+prod-start host="127.0.0.1" port="3000":
+  just build
+  HOSTNAME={{host}} PORT={{port}} bun run start
 
 # Run ESLint
 lint:
@@ -41,6 +46,10 @@ fmt:
 # Run nightly insights script
 insights:
   bun scripts/nightly-insights.ts
+
+# Backfill canonical/title artifacts for existing insights
+backfill-insights:
+  bun run scripts/backfill-insight-artifacts.ts
 
 # --- Claude Code Boot ---
 
