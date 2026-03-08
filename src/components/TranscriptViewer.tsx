@@ -11,7 +11,17 @@ type TranscriptPart = {
 
 export function TranscriptViewer({ parts }: { parts: TranscriptPart[] }) {
   const [mode, setMode] = useState<"full-width" | "columns">("full-width");
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const totalWords = parts.reduce((sum, p) => sum + p.wordCount, 0);
+
+  const toggle = (idx: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
 
   return (
     <section className="mt-12">
@@ -53,30 +63,47 @@ export function TranscriptViewer({ parts }: { parts: TranscriptPart[] }) {
 
       {/* Body */}
       <div className="rounded-3xl border border-[var(--line)] bg-white px-12 py-10">
-        {parts.map((part, i) => (
-          <div
-            key={part.chunk}
-            className={`${i < parts.length - 1 ? "mb-8 border-b border-[var(--line)] pb-8" : ""}`}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
-                Part {part.chunk} of {part.totalChunks}
-              </span>
-              <span className="text-xs text-[var(--muted)]">
-                {part.wordCount.toLocaleString()} words
-              </span>
-            </div>
+        {parts.map((part, i) => {
+          const isOpen = expanded.has(i);
+          return (
             <div
-              className={
-                mode === "columns"
-                  ? "transcript-text"
-                  : "transcript-text full-width"
-              }
+              key={part.chunk}
+              className={`${i < parts.length - 1 ? "mb-4 border-b border-[var(--line)] pb-4" : ""}`}
             >
-              {part.content}
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                className="flex w-full items-center justify-between rounded-xl px-2 py-3 text-left transition hover:bg-[var(--panel)]"
+              >
+                <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
+                  Part {part.chunk} of {part.totalChunks} &middot; {part.wordCount.toLocaleString()} words
+                </span>
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className={`h-4 w-4 text-[var(--muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              {isOpen && (
+                <div
+                  className={`mt-2 px-2 ${
+                    mode === "columns"
+                      ? "transcript-text"
+                      : "transcript-text full-width"
+                  }`}
+                >
+                  {part.content}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

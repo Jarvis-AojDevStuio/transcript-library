@@ -57,6 +57,7 @@ type ProviderSpec = {
   model?: string;
   outputMode: "stdout" | "file";
   outputPath?: string;
+  env?: NodeJS.ProcessEnv;
 };
 
 declare global {
@@ -284,6 +285,8 @@ function resolveProviderSpec(videoId: string): ProviderSpec {
 
   const model = process.env.CLAUDE_ANALYSIS_MODEL || process.env.ANALYSIS_MODEL || undefined;
   const args = ["--dangerously-skip-permissions", "-p"];
+  const env = { ...process.env };
+  delete env.CLAUDECODE;
   if (model) args.unshift("--model", model);
   return {
     provider: "claude-cli",
@@ -291,6 +294,7 @@ function resolveProviderSpec(videoId: string): ProviderSpec {
     args,
     model,
     outputMode: "stdout",
+    env,
   };
 }
 
@@ -325,6 +329,7 @@ function readProviderOutput(spec: ProviderSpec, chunks: Buffer[]): string {
 
 function spawnProvider(spec: ProviderSpec): ChildProcessWithoutNullStreams {
   return spawn(spec.command, spec.args, {
+    env: spec.env ?? process.env,
     stdio: ["pipe", "pipe", "pipe"],
     detached: false,
   });
@@ -523,7 +528,16 @@ export function spawnAnalysis(
         },
       });
     } else {
-      const error = code === null ? "process killed (timeout)" : `exit code ${code}`;
+      const stderrSummary = stderr
+        .trim()
+        .split(/\r?\n/)
+        .find((line) => line.trim().length > 0);
+      const error =
+        code === null
+          ? "process killed (timeout)"
+          : stderrSummary
+            ? `exit code ${code}: ${stderrSummary}`
+            : `exit code ${code}`;
       atomicWriteJson(statusPath(videoId), {
         status: "failed",
         pid,

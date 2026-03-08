@@ -291,6 +291,7 @@ export function buildHeadlessAnalysisPrompt(meta: HeadlessAnalysisMeta, transcri
     "- If githubRepos are provided, mention them only in terms supported by title/description/transcript.",
     "- If the transcript is incomplete or noisy, note that in caveats and continue.",
     "- Make the output directly useful inside a transcript library UI.",
+    "- CRITICAL: Your output must start with --- (the YAML frontmatter delimiter). Do NOT wrap your output in ```md or ``` code fences. The output is rendered directly as markdown in a web viewer — code fences will break the rendering.",
     "",
     "[Transcript]",
     transcript,

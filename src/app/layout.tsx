@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Fraunces } from "next/font/google";
 import Link from "next/link";
+import { NavHeader } from "@/components/NavHeader";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -44,14 +45,7 @@ export default function RootLayout({
               <Link href="/" className="font-display text-xl tracking-[-0.03em] text-[var(--ink)]">
                 Transcript Library
               </Link>
-              <nav className="flex items-center gap-1 text-sm font-medium text-[var(--muted)]">
-                <Link className="rounded-xl px-4 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="/">
-                  Library
-                </Link>
-                <Link className="rounded-xl px-4 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="/knowledge">
-                  Knowledge
-                </Link>
-              </nav>
+              <NavHeader />
             </div>
           </header>
 

@@ -60,6 +60,17 @@ Human-readable filenames are additive, not the lookup key.
 Video titles are mutable and non-unique.
 `videoId` is stable and safe for API lookups, routing, and deduplication.
 
+### 6. Output rendering
+
+Analysis markdown is rendered in the video detail page UI:
+- **Curated sections** (Summary, Key Takeaways, Action Items) are extracted by `src/lib/curation.ts` and rendered as styled cards
+- **Full Analysis Report** is rendered by `src/components/Markdown.tsx` using `react-markdown` + `remark-gfm` + `rehype-highlight`
+- The Markdown component strips outer code fences defensively (legacy outputs wrapped in ` ```md ``` `)
+- The Full Analysis Report is collapsed by default; users expand via toggle
+- Transcript parts are collapsed by default with per-part expand/collapse
+
+The SKILL.md output contract instructs the LLM to emit clean markdown (no code fences) with GFM formatting, knowing the output renders directly in a web markdown viewer.
+
 ## Future work
 - add queue-backed worker execution
 - add retry policy and stale-job recovery

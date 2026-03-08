@@ -57,6 +57,29 @@ function SparkleIcon() {
   );
 }
 
+function FullReportSection({ insight }: { insight: string | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section>
+      <div className="flex items-baseline justify-between border-b border-[var(--line)] pb-3 mb-5">
+        <h2 className="font-display text-[1.375rem] font-semibold tracking-[-0.02em] text-[var(--ink)]">Full Analysis Report</h2>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="text-[0.8125rem] font-semibold text-[var(--accent)] hover:underline"
+        >
+          {open ? "Hide full report" : "Show full report"}
+        </button>
+      </div>
+      {open && (
+        <div className="rounded-3xl border border-[var(--line)] bg-white px-14 py-12">
+          <Markdown>{insight}</Markdown>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function VideoAnalysisWorkspace({ videoId }: { videoId: string }) {
   const [data, setData] = useState<InsightResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -307,15 +330,7 @@ export function VideoAnalysisWorkspace({ videoId }: { videoId: string }) {
           ) : null}
 
           {/* Full Analysis Report section */}
-          <section>
-            <div className="flex items-baseline justify-between border-b border-[var(--line)] pb-3 mb-5">
-              <h2 className="font-display text-[1.375rem] font-semibold tracking-[-0.02em] text-[var(--ink)]">Full Analysis Report</h2>
-              <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Markdown</span>
-            </div>
-            <div className="rounded-3xl border border-[var(--line)] bg-white px-14 py-12">
-              <Markdown>{data?.insight}</Markdown>
-            </div>
-          </section>
+          <FullReportSection insight={data?.insight ?? null} />
         </div>
       ) : (
         <div className="space-y-4">
