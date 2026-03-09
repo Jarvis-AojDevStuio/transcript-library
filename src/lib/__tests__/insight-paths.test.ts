@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 describe("insight path helpers", () => {
-  it("resolves insight paths under INSIGHTS_BASE_DIR", () => {
+  it("resolves insight paths under /srv/transcript-library/insights when configured", () => {
     process.env.INSIGHTS_BASE_DIR = "/srv/transcript-library/insights";
 
     expect(insightPaths("abc123xyz89")).toEqual({

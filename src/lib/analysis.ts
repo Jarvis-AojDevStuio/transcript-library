@@ -243,6 +243,8 @@ export function insightsBaseDir(): string {
   if (configured) {
     return path.resolve(configured);
   }
+
+  // Local development keeps using the in-repo artifact root by default.
   return path.join(process.cwd(), "data", "insights");
 }
 

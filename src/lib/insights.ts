@@ -1,3 +1,13 @@
+/**
+ * Insight artifact accessors and helpers.
+ *
+ * Provides cached lookup of which videos have completed insight analyses,
+ * reading of their markdown content, log tails, and artifact path bundles.
+ * Supports both the canonical `insightsBaseDir()/{videoId}/analysis.md` layout
+ * and the legacy `insightsBaseDir()/{videoId}.md` flat-file layout.
+ *
+ * @module insights
+ */
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -16,6 +26,12 @@ import { curateYouTubeAnalyzer } from "@/lib/curation";
 
 const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{6,11}$/;
 
+/**
+ * Returns the key file paths for a video's insight directory.
+ * @param {string} videoId - YouTube video ID
+ * @returns {{ dir: string, analysis: string, legacy: string }} Path bundle
+ * @throws {Error} If `videoId` does not match the expected YouTube ID format
+ */
 export function insightPaths(videoId: string) {
   if (!VIDEO_ID_RE.test(videoId)) throw new Error(`Invalid videoId: ${videoId}`);
   const dir = insightDir(videoId);
@@ -30,6 +46,12 @@ export function insightPaths(videoId: string) {
 const CACHE_TTL_MS = 5_000;
 let _insightSetCache: { expiresAt: number; ids: Set<string> } | undefined;
 
+/**
+ * Scans the insights base directory and returns a set of video IDs that have
+ * a completed analysis file (canonical or legacy layout).
+ * @returns {Set<string>} Set of video IDs with available insights
+ * @internal
+ */
 function buildInsightSet(): Set<string> {
   const base = insightsBaseDir();
   const ids = new Set<string>();
@@ -55,6 +77,12 @@ function buildInsightSet(): Set<string> {
   return ids;
 }
 
+/**
+ * Returns a TTL-cached set of video IDs with available insight files.
+ * The cache is refreshed after `CACHE_TTL_MS` milliseconds.
+ * @returns {Set<string>} Cached set of video IDs
+ * @internal
+ */
 function getInsightIds(): Set<string> {
   const now = Date.now();
   if (_insightSetCache && now < _insightSetCache.expiresAt) {
@@ -65,10 +93,22 @@ function getInsightIds(): Set<string> {
   return ids;
 }
 
+/**
+ * Returns true if a completed insight analysis exists for the given video.
+ * @param {string} videoId - YouTube video ID
+ * @returns {boolean} True if an insight file is present
+ */
 export function hasInsight(videoId: string): boolean {
   return getInsightIds().has(videoId);
 }
 
+/**
+ * Reads the markdown content for a video's insight analysis.
+ * Attempts the canonical path first, then falls back to the legacy flat file.
+ * @param {string} videoId - YouTube video ID
+ * @returns {{ kind: "analysis"|"legacy"|"none", markdown: string|null, path: string|null }}
+ *   The insight source kind, raw markdown, and file path that was read
+ */
 export function readInsightMarkdown(videoId: string): {
   kind: "analysis" | "legacy" | "none";
   markdown: string | null;
@@ -96,6 +136,16 @@ export function readInsightMarkdown(videoId: string): {
   return { kind: "none", markdown: null, path: null };
 }
 
+/**
+ * Returns a bundle of resolved artifact paths and basenames for a video's
+ * insight directory. Falls back to legacy log paths when current ones are
+ * absent.
+ * @param {string} videoId - YouTube video ID
+ * @returns {{ canonicalPath: string, canonicalFileName: string, displayPath: string|null,
+ *   displayFileName: string|null, metadataPath: string, metadataFileName: string,
+ *   runPath: string, runFileName: string, stdoutPath: string, stdoutFileName: string,
+ *   stderrPath: string, stderrFileName: string }} Artifact path bundle
+ */
 export function getInsightArtifacts(videoId: string): {
   canonicalPath: string;
   canonicalFileName: string;
@@ -116,7 +166,9 @@ export function getInsightArtifacts(videoId: string): {
   try {
     const entries = fs
       .readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "analysis.md")
+      .filter(
+        (entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "analysis.md",
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
 
     if (entries[0]) {
@@ -127,8 +179,12 @@ export function getInsightArtifacts(videoId: string): {
   const canonicalPath = analysisPath(videoId);
   const metaPath = metadataCachePath(videoId);
   const runPath = runMetadataPath(videoId);
-  const outPath = fs.existsSync(stdoutLogPath(videoId)) ? stdoutLogPath(videoId) : legacyStdoutLogPath(videoId);
-  const errPath = fs.existsSync(stderrLogPath(videoId)) ? stderrLogPath(videoId) : legacyStderrLogPath(videoId);
+  const outPath = fs.existsSync(stdoutLogPath(videoId))
+    ? stdoutLogPath(videoId)
+    : legacyStdoutLogPath(videoId);
+  const errPath = fs.existsSync(stderrLogPath(videoId))
+    ? stderrLogPath(videoId)
+    : legacyStderrLogPath(videoId);
 
   return {
     canonicalPath,
@@ -146,6 +202,14 @@ export function getInsightArtifacts(videoId: string): {
   };
 }
 
+/**
+ * Reads up to `maxBytes` bytes from the tail of a file.
+ * Returns an empty string if the file does not exist or cannot be read.
+ * @param {string} filePath - Absolute path to the file
+ * @param {number} maxBytes - Maximum number of bytes to read from the end
+ * @returns {string} Tail content as a UTF-8 string
+ * @internal
+ */
 function readTail(filePath: string, maxBytes: number): string {
   try {
     const stat = fs.statSync(filePath);
@@ -163,6 +227,13 @@ function readTail(filePath: string, maxBytes: number): string {
   }
 }
 
+/**
+ * Reads the tail of the stdout and stderr log files for a video's analysis
+ * worker. Falls back to legacy log paths when current ones are absent.
+ * @param {string} videoId - YouTube video ID
+ * @param {number} [maxBytes=12000] - Maximum bytes to read from each log tail
+ * @returns {{ stdout: string, stderr: string }} Tail content for each stream
+ */
 export function readInsightLogTail(
   videoId: string,
   maxBytes = 12_000,
@@ -170,8 +241,12 @@ export function readInsightLogTail(
   stdout: string;
   stderr: string;
 } {
-  const stdoutPath = fs.existsSync(stdoutLogPath(videoId)) ? stdoutLogPath(videoId) : legacyStdoutLogPath(videoId);
-  const stderrPath = fs.existsSync(stderrLogPath(videoId)) ? stderrLogPath(videoId) : legacyStderrLogPath(videoId);
+  const stdoutPath = fs.existsSync(stdoutLogPath(videoId))
+    ? stdoutLogPath(videoId)
+    : legacyStdoutLogPath(videoId);
+  const stderrPath = fs.existsSync(stderrLogPath(videoId))
+    ? stderrLogPath(videoId)
+    : legacyStderrLogPath(videoId);
   return {
     stdout: readTail(stdoutPath, maxBytes),
     stderr: readTail(stderrPath, maxBytes),
@@ -180,6 +255,13 @@ export function readInsightLogTail(
 
 export { readRunMetadata };
 
+/**
+ * Strips YAML frontmatter (between `---` delimiters) from a markdown string.
+ * Returns the original string unchanged if it does not start with `---`.
+ * @param {string} md - Markdown string, potentially with frontmatter
+ * @returns {string} Markdown body without the frontmatter block
+ * @internal
+ */
 function stripFrontmatter(md: string) {
   if (!md.startsWith("---")) return md;
   const idx = md.indexOf("\n---", 3);
@@ -189,6 +271,14 @@ function stripFrontmatter(md: string) {
   return after === -1 ? "" : md.slice(after + 1);
 }
 
+/**
+ * Generates a short plain-text preview from analysis markdown.
+ * Uses the curated Summary section if available; otherwise derives a preview
+ * from the first non-empty paragraph of the body.
+ * @param {string} md - Raw analysis markdown
+ * @param {number} [maxChars=260] - Maximum preview length in characters
+ * @returns {string} Plain-text preview, truncated with `…` if needed
+ */
 export function makePreview(md: string, maxChars = 260) {
   const curated = curateYouTubeAnalyzer(md);
   if (curated.summary) {

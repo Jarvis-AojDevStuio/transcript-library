@@ -98,6 +98,7 @@ const beforeFailed = countJson(failedDir);
 
 let enqueued = 0;
 for (const v of toDo) {
+  // Keep nightly jobs aligned with the same configurable artifact root as the app runtime.
   const output = insightPaths(v.videoId);
 
   const parts = v.parts.map((p) => ({
