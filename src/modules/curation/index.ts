@@ -1,17 +1,10 @@
 /**
- * Module: curation
- * Purpose: Own markdown-to-UI insight curation/parsing heuristics.
+ * Owns markdown-to-UI insight curation and parsing heuristics.
  *
- * Public API:
- * - curateYouTubeAnalyzer(md)
- *
- * Exported IO Types:
- * - CuratedInsight
- *
- * Side Effects:
- * - none
- *
- * Error Behavior:
- * - Best-effort parsing; returns partial structures when sections are missing.
+ * @module curation
+ * @see module:lib/curation
+ * @remarks
+ * No side effects. Best-effort parsing; returns partial structures when sections are missing.
  */
+export { parseStructuredAnalysis, type StructuredAnalysis } from "@/lib/analysis-contract";
 export { curateYouTubeAnalyzer, type CuratedInsight } from "@/lib/curation";
