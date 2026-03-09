@@ -46,4 +46,9 @@ describe("insight path helpers", () => {
     expect(meta.videoId).toBe("abc123xyz89");
     expect(fs.existsSync(path.join(tmpDir, "abc123xyz89", "video-metadata.json"))).toBe(true);
   });
+
+  it("rejects unsafe video IDs before building filesystem paths", () => {
+    expect(() => insightPaths("../escape")).toThrow("Invalid videoId");
+    expect(() => metadataCachePath("../escape")).toThrow("Invalid videoId");
+  });
 });

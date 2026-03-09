@@ -1,7 +1,21 @@
+/**
+ * Metadata enrichment and prompt construction for headless YouTube analysis.
+ *
+ * Derives content type and enriched metadata for a video from the transcript
+ * repo's `info.json` files, yt-dlp, or cached `video-metadata.json`, then
+ * builds the structured prompt passed to the provider CLI.
+ *
+ * @module headless-youtube-analysis
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { metadataCachePath } from "@/lib/analysis";
 
+/**
+ * Broad content classification used to select the analysis template.
+ * @typedef {"tutorial"|"finance"|"sermon"|"commentary"|"interview"|"case-study"|"general"} ContentType
+ */
 export type ContentType =
   | "tutorial"
   | "finance"
@@ -11,6 +25,25 @@ export type ContentType =
   | "case-study"
   | "general";
 
+/**
+ * Fully enriched video metadata written to `video-metadata.json` and used to
+ * build the analysis prompt.
+ * @typedef {Object} CachedVideoMetadata
+ * @property {number} schemaVersion - Schema version for forward-compatibility checks
+ * @property {"repo-info-json"|"yt-dlp"|"fallback"} source - Where the metadata was sourced from
+ * @property {string} videoId - YouTube video ID
+ * @property {string} title - Video title
+ * @property {string} channel - Channel name
+ * @property {string} topic - Topic/category label
+ * @property {string} publishedDate - ISO publication date string
+ * @property {string} sourceUrl - Full YouTube watch URL
+ * @property {number} [durationSeconds] - Video duration in seconds
+ * @property {string} [description] - Video description text
+ * @property {string[]} githubRepos - GitHub repo URLs extracted from the description
+ * @property {ContentType} contentType - Derived content classification
+ * @property {"standard"} analysisDepth - Analysis depth (always "standard")
+ * @property {string} updatedAt - ISO timestamp when this record was last written
+ */
 export type CachedVideoMetadata = {
   schemaVersion: number;
   source: "repo-info-json" | "yt-dlp" | "fallback";
@@ -28,6 +61,10 @@ export type CachedVideoMetadata = {
   updatedAt: string;
 };
 
+/**
+ * Alias for `CachedVideoMetadata` used as the prompt-building input type.
+ * @typedef {CachedVideoMetadata} HeadlessAnalysisMeta
+ */
 export type HeadlessAnalysisMeta = CachedVideoMetadata;
 
 const SKILL_PATH = path.join(
@@ -39,7 +76,8 @@ const SKILL_PATH = path.join(
 );
 const METADATA_SCHEMA_VERSION = 2;
 
-const GITHUB_REPO_RE = /https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)(?:\/[^\s)\]]*)?/gi;
+const GITHUB_REPO_RE =
+  /https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)(?:\/[^\s)\]]*)?/gi;
 
 const TUTORIAL_CHANNELS = new Set([
   "IndyDevDan",
@@ -71,6 +109,12 @@ const SERMON_CHANNELS = new Set([
   "Munroe Recaps ",
 ]);
 
+/**
+ * Reads a file as UTF-8, returning null on any error.
+ * @param {string} filePath - Absolute path to read
+ * @returns {string|null} File contents, or null if unreadable
+ * @internal
+ */
 function safeRead(filePath: string): string | null {
   try {
     return fs.readFileSync(filePath, "utf8");
@@ -79,11 +123,26 @@ function safeRead(filePath: string): string | null {
   }
 }
 
+/**
+ * Serialises `value` as pretty-printed JSON and writes it to `filePath`,
+ * creating parent directories as needed.
+ * @param {string} filePath - Absolute path to write
+ * @param {unknown} value - Value to serialise
+ * @internal
+ */
 function safeWriteJson(filePath: string, value: unknown) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
 }
 
+/**
+ * Parses YAML frontmatter from a markdown string.
+ * Returns an empty object if no valid frontmatter is found.
+ * Only handles simple `key: value` lines; does not support nested YAML.
+ * @param {string} markdown - Markdown string that may start with `---`
+ * @returns {Record<string, string>} Parsed key-value pairs from frontmatter
+ * @internal
+ */
 function parseFrontmatter(markdown: string): Record<string, string> {
   const normalized = markdown.replace(/\r/g, "");
   if (!normalized.startsWith("---\n")) return {};
@@ -108,6 +167,15 @@ function parseFrontmatter(markdown: string): Record<string, string> {
   return out;
 }
 
+/**
+ * Derives a `ContentType` classification from video title, channel, and topic.
+ * Uses channel allow-lists first, then keyword heuristics on a combined
+ * haystack, then topic overrides. Falls back to `"general"`.
+ * @param {string} title - Video title
+ * @param {string} channel - Channel name
+ * @param {string} topic - Topic/category label
+ * @returns {ContentType} Derived content type
+ */
 export function deriveContentType(title: string, channel: string, topic: string): ContentType {
   const normalizedTitle = title.toLowerCase();
   const normalizedChannel = channel.toLowerCase();
@@ -118,16 +186,28 @@ export function deriveContentType(title: string, channel: string, topic: string)
   if (FINANCE_CHANNELS.has(channel)) return "finance";
   if (SERMON_CHANNELS.has(channel) || normalizedTopic === "faith") return "sermon";
 
-  if (/(tutorial|walkthrough|guide|setup|build|how to|hands-on|full course|playbook|demo)/.test(haystack)) {
+  if (
+    /(tutorial|walkthrough|guide|setup|build|how to|hands-on|full course|playbook|demo)/.test(
+      haystack,
+    )
+  ) {
     return "tutorial";
   }
-  if (/(finance|invest|investing|stocks|market|valuation|dividend|portfolio|palantir|bitcoin|tariff|earnings|margin)/.test(haystack)) {
+  if (
+    /(finance|invest|investing|stocks|market|valuation|dividend|portfolio|palantir|bitcoin|tariff|earnings|margin)/.test(
+      haystack,
+    )
+  ) {
     return "finance";
   }
   if (/(sermon|prayer|kingdom|scripture|church|pastor|faith|gospel)/.test(haystack)) {
     return "sermon";
   }
-  if (/(interview|podcast|conversation|qa|q&a|featuring|founder story|interview with|sit down with|talks with|speaks with)/.test(haystack)) {
+  if (
+    /(interview|podcast|conversation|qa|q&a|featuring|founder story|interview with|sit down with|talks with|speaks with)/.test(
+      haystack,
+    )
+  ) {
     return "interview";
   }
   if (/(case study|breakdown|postmortem|what happened|inside|deconstruct)/.test(haystack)) {
@@ -143,6 +223,12 @@ export function deriveContentType(title: string, channel: string, topic: string)
   return "general";
 }
 
+/**
+ * Extracts unique, normalised GitHub repository URLs from a text string.
+ * Strips `.git` suffixes and deduplicates results.
+ * @param {string|undefined} text - Text to search, e.g. a video description
+ * @returns {string[]} Sorted array of canonical `https://github.com/owner/repo` URLs
+ */
 export function extractGithubRepos(text: string | undefined): string[] {
   if (!text) return [];
   const repos = new Set<string>();
@@ -153,14 +239,25 @@ export function extractGithubRepos(text: string | undefined): string[] {
   return Array.from(repos).sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * Returns the absolute path to the `{videoId}.info.json` file in the
+ * transcript repo's inbox directory.
+ * @param {string} videoId - YouTube video ID
+ * @param {string} repoRoot - Absolute path to the transcript repo root
+ * @returns {string} Absolute path to the info JSON file
+ * @internal
+ */
 function repoInfoPath(videoId: string, repoRoot: string): string {
   return path.join(repoRoot, "youtube-transcripts", "inbox", `${videoId}.info.json`);
 }
 
-function metadataCachePath(videoId: string): string {
-  return path.join(process.cwd(), "data", "insights", videoId, "video-metadata.json");
-}
-
+/**
+ * Reads and validates the cached `video-metadata.json` for a video.
+ * Returns null if the file is absent, unparseable, or has a stale schema version.
+ * @param {string} videoId - YouTube video ID
+ * @returns {CachedVideoMetadata|null} Cached metadata, or null if unavailable
+ * @internal
+ */
 function loadCachedMetadata(videoId: string): CachedVideoMetadata | null {
   const raw = safeRead(metadataCachePath(videoId));
   if (!raw) return null;
@@ -173,6 +270,14 @@ function loadCachedMetadata(videoId: string): CachedVideoMetadata | null {
   }
 }
 
+/**
+ * Reads and parses the `{videoId}.info.json` file from the transcript repo's
+ * inbox directory. Returns null if the file is absent or unparseable.
+ * @param {string} videoId - YouTube video ID
+ * @param {string} repoRoot - Absolute path to the transcript repo root
+ * @returns {Record<string, unknown>|null} Parsed JSON object, or null
+ * @internal
+ */
 function loadInfoJson(videoId: string, repoRoot: string): Record<string, unknown> | null {
   const raw = safeRead(repoInfoPath(videoId, repoRoot));
   if (!raw) return null;
@@ -183,6 +288,14 @@ function loadInfoJson(videoId: string, repoRoot: string): Record<string, unknown
   }
 }
 
+/**
+ * Invokes `yt-dlp --dump-single-json` for a YouTube URL and returns the parsed
+ * metadata object. Returns null if yt-dlp is unavailable, times out, or the
+ * output cannot be parsed.
+ * @param {string} sourceUrl - Full YouTube watch URL
+ * @returns {Record<string, unknown>|null} Parsed yt-dlp metadata, or null
+ * @internal
+ */
 function fetchYoutubeMetadata(sourceUrl: string): Record<string, unknown> | null {
   const result = spawnSync(
     "yt-dlp",
@@ -202,6 +315,21 @@ function fetchYoutubeMetadata(sourceUrl: string): Record<string, unknown> | null
   }
 }
 
+/**
+ * Builds and caches enriched `HeadlessAnalysisMeta` for a video.
+ *
+ * Resolution order:
+ * 1. Cached `video-metadata.json` (if schema version matches)
+ * 2. `{videoId}.info.json` from the transcript repo inbox
+ * 3. yt-dlp live fetch
+ * 4. Fallback using only the supplied input fields
+ *
+ * Writes the resolved metadata to `video-metadata.json` before returning.
+ *
+ * @param {{ videoId: string, title: string, channel: string, topic: string,
+ *   publishedDate: string, transcriptPartPath?: string, repoRoot: string }} input - Input metadata
+ * @returns {HeadlessAnalysisMeta} Fully enriched metadata for prompt building
+ */
 export function enrichAnalysisMeta(input: {
   videoId: string;
   title: string;
@@ -257,7 +385,18 @@ export function enrichAnalysisMeta(input: {
   return meta;
 }
 
-export function buildHeadlessAnalysisPrompt(meta: HeadlessAnalysisMeta, transcript: string): string {
+/**
+ * Builds the full prompt string passed to the provider CLI for a headless
+ * analysis run. Embeds the local skill specification, resolved metadata, and
+ * the full transcript.
+ * @param {HeadlessAnalysisMeta} meta - Enriched video metadata
+ * @param {string} transcript - Full transcript text
+ * @returns {string} Prompt string to pipe into the provider's stdin
+ */
+export function buildHeadlessAnalysisPrompt(
+  meta: HeadlessAnalysisMeta,
+  transcript: string,
+): string {
   const skillSpec = safeRead(SKILL_PATH) ?? "";
   const description = meta.description?.trim() || "Not available.";
   const githubRepos = meta.githubRepos.length ? meta.githubRepos.join("\n") : "None detected.";

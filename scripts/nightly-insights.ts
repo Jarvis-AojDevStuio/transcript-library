@@ -98,8 +98,7 @@ const beforeFailed = countJson(failedDir);
 
 let enqueued = 0;
 for (const v of toDo) {
-  const outDir = path.join(dataDir, "insights", v.videoId);
-  const outPath = path.join(outDir, "analysis.md");
+  const output = insightPaths(v.videoId);
 
   const parts = v.parts.map((p) => ({
     chunk: p.chunk,
@@ -124,7 +123,7 @@ for (const v of toDo) {
       root: repoRoot(),
       parts,
     },
-    output: { outDir, outPath },
+    output: { outDir: output.dir, outPath: output.analysis },
     options: { runner: "claude-p", skill: "YouTubeAnalyzer", depth: "full" },
     attempts: 0,
     maxAttempts: 3,
