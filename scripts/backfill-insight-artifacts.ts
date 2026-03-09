@@ -1,9 +1,11 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getVideo } from "@/modules/catalog";
-import { displayAnalysisPath, insightsBaseDir, metadataCachePath } from "@/modules/analysis";
-import { insightPaths } from "@/modules/insights";
+
+const require = createRequire(import.meta.url);
+const { analysisPath, displayAnalysisPath, insightsBaseDir, metadataCachePath } =
+  require("../src/lib/insight-paths.ts") as typeof import("../src/lib/insight-paths");
 
 function readJson(filePath: string): Record<string, unknown> | null {
   try {
@@ -32,15 +34,10 @@ export function readTitleFromFrontmatter(markdown: string): string | null {
 }
 
 export function resolveInsightTitle(videoId: string): string | null {
-  try {
-    const video = getVideo(videoId);
-    if (video?.title) return video.title;
-  } catch {}
-
   const meta = readJson(metadataCachePath(videoId));
   if (typeof meta?.title === "string" && meta.title.trim()) return meta.title.trim();
 
-  const { analysis } = insightPaths(videoId);
+  const analysis = analysisPath(videoId);
   if (fs.existsSync(analysis)) {
     const title = readTitleFromFrontmatter(fs.readFileSync(analysis, "utf8"));
     if (title) return title;
@@ -51,7 +48,7 @@ export function resolveInsightTitle(videoId: string): string | null {
 
 export function ensureDisplayArtifact(videoId: string): string | null {
   const title = resolveInsightTitle(videoId);
-  const { analysis } = insightPaths(videoId);
+  const analysis = analysisPath(videoId);
   if (!title || !fs.existsSync(analysis)) return null;
 
   const display = displayAnalysisPath(videoId, title);

@@ -1,21 +1,25 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { parseStructuredAnalysis, type StructuredAnalysis } from "@/lib/analysis-contract";
-import { curateYouTubeAnalyzer } from "@/lib/curation";
-import {
+import type { StructuredAnalysis } from "../src/lib/analysis-contract";
+
+const require = createRequire(import.meta.url);
+const { parseStructuredAnalysis } =
+  require("../src/lib/analysis-contract.ts") as typeof import("../src/lib/analysis-contract");
+const { curateYouTubeAnalyzer } =
+  require("../src/lib/curation.ts") as typeof import("../src/lib/curation");
+const {
   analysisPath,
-  atomicWriteJson,
+  insightDir,
   insightsBaseDir,
   isValidVideoId,
+  legacyInsightPath,
   structuredAnalysisPath,
-} from "@/modules/analysis";
-import { insightPaths } from "@/modules/insights";
-import {
-  ensureDisplayArtifact,
-  readTitleFromFrontmatter,
-  resolveInsightTitle,
-} from "./backfill-insight-artifacts";
+} = require("../src/lib/insight-paths.ts") as typeof import("../src/lib/insight-paths");
+const { ensureDisplayArtifact, readTitleFromFrontmatter, resolveInsightTitle } =
+  require("./backfill-insight-artifacts.ts") as typeof import("./backfill-insight-artifacts");
 
 export const MIGRATION_STATUS_FILE = ".migration-status.json";
 
@@ -41,6 +45,26 @@ type LegacyInsightCandidate = {
   videoId: string;
   legacyPath: string;
 };
+
+function atomicWriteJson(filePath: string, obj: unknown): void {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.tmp_${crypto.randomBytes(6).toString("hex")}`;
+  const fd = fs.openSync(tmp, "w");
+
+  try {
+    fs.writeSync(fd, JSON.stringify(obj, null, 2));
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fs.renameSync(tmp, filePath);
+  } catch (error) {
+    fs.closeSync(fd);
+    try {
+      fs.unlinkSync(tmp);
+    } catch {}
+    throw error;
+  }
+}
 
 function migrationStatusPath(): string {
   return path.join(insightsBaseDir(), MIGRATION_STATUS_FILE);
@@ -92,7 +116,9 @@ function migrateLegacyInsight(
 ): { migrated: boolean; reason?: string } {
   const markdown = fs.readFileSync(candidate.legacyPath, "utf8");
   const structured = buildStructuredAnalysis(candidate.videoId, markdown);
-  const { dir, analysis, legacy } = insightPaths(candidate.videoId);
+  const dir = insightDir(candidate.videoId);
+  const analysis = analysisPath(candidate.videoId);
+  const legacy = legacyInsightPath(candidate.videoId);
 
   if (checkOnly) {
     return { migrated: false };

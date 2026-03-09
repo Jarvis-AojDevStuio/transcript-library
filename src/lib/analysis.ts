@@ -12,11 +12,29 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import {
+  analysisPath,
+  displayAnalysisPath,
+  insightDir,
+  insightsBaseDir,
+  metadataCachePath,
+  structuredAnalysisPath,
+} from "./insight-paths";
+import {
   buildHeadlessAnalysisPrompt,
   enrichAnalysisMeta,
   type HeadlessAnalysisMeta,
 } from "@/lib/headless-youtube-analysis";
 import { parseStructuredAnalysis, type StructuredAnalysis } from "@/lib/analysis-contract";
+
+export {
+  analysisPath,
+  displayAnalysisPath,
+  insightDir,
+  insightsBaseDir,
+  isValidVideoId,
+  metadataCachePath,
+  structuredAnalysisPath,
+} from "./insight-paths";
 
 /**
  * Status file written to `status.json` for each analysis run.
@@ -142,7 +160,6 @@ const WORKER_STDERR_FILE = "worker-stderr.txt";
 const LEGACY_CLAUDE_STDOUT_FILE = "claude-stdout.txt";
 /** Legacy Claude stderr filename (pre-worker rename). */
 const LEGACY_CLAUDE_STDERR_FILE = "claude-stderr.txt";
-const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{6,11}$/;
 let _initialized = false;
 
 /**
@@ -236,87 +253,12 @@ export function isProcessAlive(pid: number): boolean {
 }
 
 /**
- * Returns the base directory for all insight artifacts.
- * Falls back to the repo-local default when INSIGHTS_BASE_DIR is unset.
- * Hosted deployments should set INSIGHTS_BASE_DIR=/srv/transcript-library/insights.
- * @returns {string} Absolute path to the configured insights root
- */
-export function insightsBaseDir(): string {
-  const configured = process.env.INSIGHTS_BASE_DIR?.trim();
-  if (configured) {
-    return path.resolve(configured);
-  }
-
-  // Local development keeps using the in-repo artifact root by default.
-  return path.join(process.cwd(), "data", "insights");
-}
-
-/**
- * Throws when a video ID is not safe to use in artifact paths.
- * @param {string} videoId - Candidate YouTube video ID
- * @returns {string} The validated video ID
- * @throws {Error} If the video ID is invalid
- */
-function assertValidVideoId(videoId: string): string {
-  if (!isValidVideoId(videoId)) {
-    throw new Error(`Invalid videoId: ${videoId}`);
-  }
-  return videoId;
-}
-
-/**
- * Returns the insight directory for a video.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to {insightsBaseDir()}/{videoId}
- */
-export function insightDir(videoId: string): string {
-  return path.join(insightsBaseDir(), assertValidVideoId(videoId));
-}
-
-/**
  * Returns the path to status.json for a video.
  * @param {string} videoId - YouTube video ID
  * @returns {string} Path to status.json
  */
 export function statusPath(videoId: string): string {
   return path.join(insightDir(videoId), "status.json");
-}
-
-/**
- * Returns the path to the canonical analysis markdown file.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to analysis.md
- */
-export function analysisPath(videoId: string): string {
-  return path.join(insightDir(videoId), "analysis.md");
-}
-
-/**
- * Returns the path to the canonical structured analysis JSON file.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to analysis.json
- */
-export function structuredAnalysisPath(videoId: string): string {
-  return path.join(insightDir(videoId), "analysis.json");
-}
-
-/**
- * Returns the path to the human-readable analysis file (slugified title).
- * @param {string} videoId - YouTube video ID
- * @param {string} title - Video title to slugify
- * @returns {string} Path to {slugified-title}.md
- */
-export function displayAnalysisPath(videoId: string, title: string): string {
-  return path.join(insightDir(videoId), `${slugifyTitle(title)}.md`);
-}
-
-/**
- * Returns the path to the cached video metadata JSON.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to video-metadata.json
- */
-export function metadataCachePath(videoId: string): string {
-  return path.join(insightDir(videoId), "video-metadata.json");
 }
 
 /**
@@ -362,21 +304,6 @@ export function legacyStdoutLogPath(videoId: string): string {
  */
 export function legacyStderrLogPath(videoId: string): string {
   return path.join(insightDir(videoId), LEGACY_CLAUDE_STDERR_FILE);
-}
-
-/**
- * Slugifies a video title for use in filenames.
- * Lowercases, replaces non-alphanumeric with hyphens, trims to 96 chars.
- * @param {string} title - Raw video title
- * @returns {string} Slugified string, or "analysis" if empty
- */
-export function slugifyTitle(title: string): string {
-  const normalized = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 96);
-  return normalized || "analysis";
 }
 
 /**
@@ -441,15 +368,6 @@ export function readRunMetadata(videoId: string): RunFile | null {
   } catch {
     return null;
   }
-}
-
-/**
- * Validates a YouTube video ID format.
- * @param {string} id - String to validate
- * @returns {boolean} True if id matches YouTube video ID pattern
- */
-export function isValidVideoId(id: string): boolean {
-  return VIDEO_ID_RE.test(id);
 }
 
 /**
