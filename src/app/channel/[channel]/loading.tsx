@@ -1,3 +1,7 @@
+/**
+ * Channel page loading skeleton — renders animated placeholders for the channel
+ * header and a list of video row cards.
+ */
 export default function Loading() {
   return (
     <div className="space-y-8 pb-12">
@@ -17,7 +21,11 @@ export default function Loading() {
         </div>
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="grid items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-6 py-5" style={{ gridTemplateColumns: "1fr auto auto" }}>
+            <div
+              key={i}
+              className="grid items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-6 py-5"
+              style={{ gridTemplateColumns: "1fr auto auto" }}
+            >
               <div>
                 <div className="h-5 w-3/4 animate-pulse rounded bg-black/5" />
                 <div className="mt-1 h-4 w-24 animate-pulse rounded bg-black/5" />

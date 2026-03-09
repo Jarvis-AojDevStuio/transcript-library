@@ -4,6 +4,15 @@ import path from "node:path";
 
 export const runtime = "nodejs";
 
+/**
+ * GET /api/raw
+ * Serves a raw file from `PLAYLIST_TRANSCRIPTS_REPO` as plain text.
+ * Path traversal is blocked by resolving and prefix-checking against the repo root.
+ *
+ * @param req - Incoming request. Expects `?path=` query param with a repo-relative
+ *   file path.
+ * @returns Plain-text file contents, or a 400 / 403 / 503 / 500 error response.
+ */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const p = url.searchParams.get("path");
@@ -11,7 +20,10 @@ export async function GET(req: Request) {
 
   const root = process.env.PLAYLIST_TRANSCRIPTS_REPO;
   if (!root) {
-    return NextResponse.json({ ok: false, error: "PLAYLIST_TRANSCRIPTS_REPO not configured" }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, error: "PLAYLIST_TRANSCRIPTS_REPO not configured" },
+      { status: 503 },
+    );
   }
   const resolved = path.resolve(root, p);
   if (!resolved.startsWith(path.resolve(root) + path.sep)) {

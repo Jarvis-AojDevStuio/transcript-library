@@ -5,6 +5,16 @@ import { isProcessAlive, readStatus, isValidVideoId, spawnAnalysis } from "@/mod
 
 export const runtime = "nodejs";
 
+/**
+ * POST /api/analyze
+ * Validates the video, assembles its full transcript, and spawns a background
+ * analysis worker. Returns immediately; the worker writes artifacts to disk as it
+ * runs.
+ *
+ * @param req - Incoming request. Expects `?videoId=` query param.
+ * @returns JSON `{ ok: true, status: "running" }` on success, or a 400 / 404 /
+ *   409 / 429 error response.
+ */
 export async function POST(req: Request) {
   const url = new URL(req.url);
   const videoId = url.searchParams.get("videoId") || "";

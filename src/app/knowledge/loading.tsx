@@ -1,3 +1,7 @@
+/**
+ * Knowledge index loading skeleton — renders animated placeholders for the page
+ * heading and a grid of category cards.
+ */
 export default function Loading() {
   return (
     <div className="space-y-8 pb-12">

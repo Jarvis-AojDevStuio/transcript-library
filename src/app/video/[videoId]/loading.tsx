@@ -1,3 +1,7 @@
+/**
+ * Video page loading skeleton — renders animated placeholders for the breadcrumb,
+ * video player aspect-ratio box, metadata bar, and analysis workspace area.
+ */
 export default function Loading() {
   return (
     <div className="space-y-8 pb-12">

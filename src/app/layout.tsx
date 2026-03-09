@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Root application layout — applies global fonts (Manrope body, Fraunces display),
+ * wraps every page in a sticky nav header, a centred main content area, and a
+ * minimal footer. Also includes a skip-to-content link for keyboard navigation.
+ *
+ * @param children - Page content rendered inside the `<main>` element.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,12 +42,12 @@ export default function RootLayout({
         <div className="min-h-dvh bg-[var(--app-bg)] text-[var(--ink)]">
           <a
             href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-sm focus:text-[var(--accent-foreground)]"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-xl focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-sm focus:text-[var(--accent-foreground)]"
           >
             Skip to main content
           </a>
 
-          <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--app-bg)]/95 backdrop-blur-[20px] saturate-[1.4]">
+          <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--app-bg)]/95 saturate-[1.4] backdrop-blur-[20px]">
             <div className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-8">
               <Link href="/" className="font-display text-xl tracking-[-0.03em] text-[var(--ink)]">
                 Transcript Library

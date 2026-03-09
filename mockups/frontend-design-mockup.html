@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcript Library — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════
+     THE READING ROOM — Design System
+     A warm editorial aesthetic for knowledge workers.
+     Not a dashboard. A place to think.
+     ═══════════════════════════════════════════════ */
+
+  :root {
+    /* Surface palette — paper and ink */
+    --bg: #f6f3ed;
+    --bg-warm: #f0ece4;
+    --bg-deep: #e8e3d9;
+    --surface: #faf8f4;
+    --surface-elevated: #ffffff;
+    --ink: #1a1a18;
+    --ink-secondary: #4a4a45;
+    --ink-tertiary: #8a8a82;
+    --ink-ghost: #b5b5ad;
+
+    /* Accent — burnt sienna, like a bookbinder's leather */
+    --accent: #c45d3e;
+    --accent-soft: rgba(196, 93, 62, 0.12);
+    --accent-hover: #a84e33;
+
+    /* Structural */
+    --rule: rgba(26, 26, 24, 0.1);
+    --rule-strong: rgba(26, 26, 24, 0.2);
+    --shadow-sm: 0 1px 3px rgba(26, 26, 24, 0.06);
+    --shadow-md: 0 4px 16px rgba(26, 26, 24, 0.08);
+    --shadow-lg: 0 12px 40px rgba(26, 26, 24, 0.1);
+
+    /* Typography scale */
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-body: 'DM Sans', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-2xl: 64px;
+    --space-3xl: 96px;
+
+    /* Layout */
+    --content-max: 1120px;
+    --reading-max: 720px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── View switching mechanics ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Top navigation bar ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(246, 243, 237, 0.88);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .topbar-inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .topbar-brand {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .topbar-brand em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .topbar-link {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: var(--font-body);
+  }
+
+  .topbar-link:hover,
+  .topbar-link.active {
+    color: var(--ink);
+    background: rgba(26, 26, 24, 0.05);
+  }
+
+  .topbar-link.active {
+    font-weight: 500;
+  }
+
+  .topbar-stat {
+    font-size: 0.75rem;
+    color: var(--ink-ghost);
+    font-variant-numeric: tabular-nums;
+    margin-left: var(--space-md);
+    padding-left: var(--space-md);
+    border-left: 1px solid var(--rule);
+  }
+
+  /* ── Page wrapper ── */
+  .page {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-lg) var(--space-3xl);
+  }
+
+  /* ═══════════════════════════════════
+     HOME VIEW — The Catalog
+     ═══════════════════════════════════ */
+
+  .home-header {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .home-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    max-width: 680px;
+  }
+
+  .home-header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .home-header p {
+    margin-top: var(--space-md);
+    font-size: 1.0625rem;
+    color: var(--ink-secondary);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  /* Search bar */
+  .search-bar {
+    margin-bottom: var(--space-xl);
+    position: relative;
+  }
+
+  .search-bar input {
+    width: 100%;
+    padding: 14px 20px 14px 44px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-bar input::placeholder { color: var(--ink-ghost); }
+
+  .search-bar input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .search-bar .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-ghost);
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-ghost);
+    margin-bottom: var(--space-md);
+  }
+
+  /* Channel cards — compact, editorial */
+  .channel-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .channel-card {
+    background: var(--surface);
+    padding: var(--space-lg);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .channel-card:hover {
+    background: var(--surface-elevated);
+  }
+
+  .channel-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-sm);
+  }
+
+  .channel-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .channel-card .count {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .channel-card .topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--space-sm);
+  }
+
+  .topic-chip {
+    font-size: 0.6875rem;
+    color: var(--ink-secondary);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .topic-chip.accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* Recent knowledge strip */
+  .recent-strip {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--rule);
+  }
+
+  .recent-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .recent-item {
+    padding: var(--space-md);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .recent-item:hover {
+    border-color: var(--rule-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .recent-item h4 {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .recent-item .meta {
+    font-size: 0.75rem;
+    color: var(--ink-tertiary);
+  }
+
+  /* ═══════════════════════════════════
+     CHANNEL VIEW
+     ═══════════════════════════════════ */
+
+  .breadcrumb {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+    margin-bottom: var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .breadcrumb a {
+    color: var(--ink-tertiary);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .breadcrumb a:hover { color: var(--ink); }
+
+  .breadcrumb .sep { color: var(--ink-ghost); }
+
+  .channel-header {
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .channel-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .channel-meta {
+    display: flex;
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+    font-size: 0.875rem;
+    color: var(--ink-secondary);
+  }
+
+  .channel-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .channel-meta .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink-ghost);
+  }
+
+  /* Video list — table-like rows */
+  .video-list {
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .video-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.12s;
+    cursor: pointer;
+  }
+
+  .video-row:last-child { border-bottom: none; }
+
+  .video-row:hover {
+    background: var(--surface);
+  }
+
+  .video-row .title {
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .video-row .topic-chip {
+    flex-shrink: 0;
+  }
+
+  .video-row .status {
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-tertiary);
+    white-space: nowrap;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink-ghost);
+  }
+
+  .status-dot.ready { background: #4a9e6b; }
+  .status-dot.pending { background: var(--ink-ghost); }
+
+  .video-row .date {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ═══════════════════════════════════
+     VIDEO WORKSPACE VIEW
+     ═══════════════════════════════════ */
+
+  .video-workspace .page {
+    max-width: 1200px;
+  }
+
+  .video-meta-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+
+  .video-meta-bar .left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .video-meta-bar .channel-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .video-meta-bar .channel-link:hover {
+    color: var(--accent-hover);
+  }
+
+  .video-meta-bar .date-text {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+  }
+
+  .video-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: var(--space-lg);
+    max-width: 900px;
+  }
+
+  /* The video player — LARGE, edge-to-edge in content */
+  .player-container {
+    width: 100%;
+    background: #0a0a0a;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: var(--space-xs);
+  }
+
+  .player-aspect {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+    background: #111;
+  }
+
+  .player-aspect iframe,
+  .player-aspect .player-placeholder {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .player-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: color 0.2s;
+    background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+  }
+
+  .player-placeholder:hover {
+    color: rgba(255,255,255,0.9);
+  }
+
+  .play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .player-placeholder:hover .play-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.05);
+  }
+
+  .play-btn svg {
+    width: 28px;
+    height: 28px;
+    margin-left: 3px;
+    fill: currentColor;
+  }
+
+  .player-placeholder span {
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+  }
+
+  .player-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.75rem;
+    color: var(--ink-tertiary);
+  }
+
+  .player-bar a {
+    color: var(--ink-tertiary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s;
+  }
+
+  .player-bar a:hover { color: var(--ink); }
+
+  /* Topic pills row under video */
+  .topic-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ── Content tabs (Analysis / Transcript) ── */
+  .content-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: var(--space-xl);
+  }
+
+  .content-tab {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-tertiary);
+    padding: var(--space-md) var(--space-lg);
+    border: none;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s;
+  }
+
+  .content-tab:hover { color: var(--ink); }
+
+  .content-tab.active {
+    color: var(--ink);
+  }
+
+  .content-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: var(--space-lg);
+    right: var(--space-lg);
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+
+  /* ── Analysis panel (the star of the show) ── */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .analysis-panel {
+    max-width: var(--reading-max);
+  }
+
+  .analysis-panel.wide {
+    max-width: 100%;
+  }
+
+  /* Analysis summary card */
+  .analysis-summary {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .analysis-summary .label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: var(--space-sm);
+  }
+
+  .analysis-summary p {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--ink-secondary);
+  }
+
+  /* Takeaways as a numbered list */
+  .takeaways {
+    margin-bottom: var(--space-xl);
+  }
+
+  .takeaways h3 {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-md);
+  }
+
+  .takeaway-item {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .takeaway-item:last-child { border-bottom: none; }
+
+  .takeaway-num {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 32px;
+    font-style: italic;
+  }
+
+  .takeaway-text {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--ink-secondary);
+  }
+
+  /* Action items */
+  .action-items {
+    margin-bottom: var(--space-xl);
+  }
+
+  .action-items h3 {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-md);
+  }
+
+  .action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    font-size: 0.9375rem;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+  }
+
+  .action-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  /* Full markdown report */
+  .md-report {
+    border-top: 1px solid var(--rule);
+    padding-top: var(--space-xl);
+    margin-top: var(--space-xl);
+  }
+
+  .md-report h2 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+    color: var(--ink);
+  }
+
+  .md-report h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    letter-spacing: -0.015em;
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+    color: var(--ink);
+  }
+
+  .md-report p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--ink-secondary);
+    margin-bottom: var(--space-md);
+  }
+
+  .md-report ul {
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-md);
+  }
+
+  .md-report li {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--ink-secondary);
+    margin-bottom: 6px;
+  }
+
+  .md-report blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: var(--space-lg);
+    margin: var(--space-lg) 0;
+    color: var(--ink-tertiary);
+    font-style: italic;
+  }
+
+  .md-report code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background: var(--bg-deep);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  .md-report pre {
+    background: #1a1a18;
+    border-radius: 8px;
+    padding: var(--space-lg);
+    margin: var(--space-lg) 0;
+    overflow-x: auto;
+  }
+
+  .md-report pre code {
+    background: none;
+    padding: 0;
+    color: #e8e6e0;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+  }
+
+  .md-report strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .md-report hr {
+    border: none;
+    height: 1px;
+    background: var(--rule);
+    margin: var(--space-xl) 0;
+  }
+
+  /* ── Transcript panel ── */
+  .transcript-panel {
+    width: 100%;
+  }
+
+  .transcript-section {
+    margin-bottom: var(--space-xl);
+  }
+
+  .transcript-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .transcript-section-header h4 {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .transcript-section-header .word-count {
+    font-size: 0.75rem;
+    color: var(--ink-ghost);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .transcript-text {
+    font-size: 1rem;
+    line-height: 2;
+    color: var(--ink-secondary);
+    column-count: 1;
+    /* FULL WIDTH - no columns, no newspaper layout */
+  }
+
+  .transcript-text p {
+    margin-bottom: var(--space-md);
+    text-indent: 0;
+  }
+
+  /* Generate analysis button */
+  .generate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .generate-btn:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ═══════════════════════════════════
+     KNOWLEDGE VIEW
+     ═══════════════════════════════════ */
+
+  .knowledge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .knowledge-card {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: var(--space-lg);
+    background: var(--surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  }
+
+  .knowledge-card:hover {
+    border-color: var(--rule-strong);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+  }
+
+  .knowledge-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+    text-transform: capitalize;
+  }
+
+  .knowledge-card p {
+    font-size: 0.8125rem;
+    color: var(--ink-tertiary);
+    line-height: 1.5;
+  }
+
+  /* ═══════════════════════════════════
+     ANIMATIONS
+     ═══════════════════════════════════ */
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-in {
+    animation: fadeUp 0.4s ease-out both;
+  }
+
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.2s; }
+
+  /* ═══════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════ */
+
+  .footer {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-lg);
+    border-top: 1px solid var(--rule);
+    font-size: 0.75rem;
+    color: var(--ink-ghost);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ═══════════════════════════════════
+     RESPONSIVE TWEAKS
+     ═══════════════════════════════════ */
+
+  @media (max-width: 768px) {
+    .channel-list {
+      grid-template-columns: 1fr;
+    }
+
+    .video-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-sm);
+    }
+
+    .video-row .date { display: none; }
+
+    .topbar-stat { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     TOP NAVIGATION — Minimal, always present
+     ══════════════════════════════════════════════ -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="topbar-brand" onclick="showView('home'); return false;">Transcript <em>Library</em></a>
+    <div class="topbar-nav">
+      <button class="topbar-link active" id="nav-library" onclick="showView('home')">Library</button>
+      <button class="topbar-link" id="nav-knowledge" onclick="showView('knowledge')">Knowledge</button>
+      <span class="topbar-stat">42 videos &middot; 8 channels</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     VIEW 1: HOME — The Catalog
+     ══════════════════════════════════════════════ -->
+<div id="view-home" class="view active">
+  <div class="page">
+
+    <header class="home-header animate-in">
+      <h1>Watch the source.<br>Read the <em>synthesis.</em></h1>
+      <p>A private library for transcripts, analysis, and knowledge your group has collected from YouTube.</p>
+    </header>
+
+    <div class="search-bar animate-in delay-1">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input type="text" placeholder="Search channels, topics, or creators..." id="channelSearch" onkeyup="filterChannels()">
+    </div>
+
+    <div class="section-label animate-in delay-2">Channels</div>
+
+    <div class="channel-list animate-in delay-2" id="channelGrid">
+
+      <a class="channel-card" onclick="showView('channel'); return false;" href="#">
+        <div class="channel-card-header">
+          <h3>Lex Fridman</h3>
+          <span class="count">12 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">AI &amp; Machine Learning</span>
+          <span class="topic-chip">Philosophy</span>
+          <span class="topic-chip">Science</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Huberman Lab</h3>
+          <span class="count">8 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Neuroscience</span>
+          <span class="topic-chip">Health</span>
+          <span class="topic-chip">Performance</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>3Blue1Brown</h3>
+          <span class="count">6 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Mathematics</span>
+          <span class="topic-chip">Visualization</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Veritasium</h3>
+          <span class="count">5 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Physics</span>
+          <span class="topic-chip">Engineering</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Fireship</h3>
+          <span class="count">4 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Web Dev</span>
+          <span class="topic-chip">JavaScript</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Two Minute Papers</h3>
+          <span class="count">3 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">AI Research</span>
+          <span class="topic-chip">Graphics</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Computerphile</h3>
+          <span class="count">2 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Computer Science</span>
+          <span class="topic-chip">Algorithms</span>
+        </div>
+      </a>
+
+      <a class="channel-card" href="#">
+        <div class="channel-card-header">
+          <h3>Y Combinator</h3>
+          <span class="count">2 videos</span>
+        </div>
+        <div class="topics">
+          <span class="topic-chip accent">Startups</span>
+          <span class="topic-chip">Business</span>
+        </div>
+      </a>
+
+    </div>
+
+    <div class="recent-strip animate-in delay-3">
+      <div class="section-label">Recent knowledge</div>
+      <div class="recent-list">
+        <a class="recent-item" href="#">
+          <h4>Notes on Transformer Architecture</h4>
+          <span class="meta">AI Research &middot; 3 days ago</span>
+        </a>
+        <a class="recent-item" href="#">
+          <h4>Sleep Optimization Protocol</h4>
+          <span class="meta">Health &middot; 1 week ago</span>
+        </a>
+        <a class="recent-item" href="#">
+          <h4>Linear Algebra Visual Intuition</h4>
+          <span class="meta">Mathematics &middot; 2 weeks ago</span>
+        </a>
+        <a class="recent-item" href="#">
+          <h4>React Server Components Deep Dive</h4>
+          <span class="meta">Web Dev &middot; 2 weeks ago</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     VIEW 2: CHANNEL — Video List
+     ══════════════════════════════════════════════ -->
+<div id="view-channel" class="view">
+  <div class="page">
+
+    <div class="breadcrumb animate-in">
+      <a href="#" onclick="showView('home'); return false;">Library</a>
+      <span class="sep">/</span>
+      <span>Lex Fridman</span>
+    </div>
+
+    <header class="channel-header animate-in delay-1">
+      <h1>Lex Fridman</h1>
+      <div class="channel-meta">
+        <span>12 videos</span>
+        <span class="dot"></span>
+        <span>7 analyzed</span>
+        <span class="dot"></span>
+        <span>Topics: AI, Philosophy, Science, Consciousness</span>
+      </div>
+    </header>
+
+    <div class="section-label animate-in delay-2">Video lineup</div>
+
+    <div class="video-list animate-in delay-2">
+
+      <a class="video-row" href="#" onclick="showView('video'); return false;">
+        <div class="title">Sam Altman: OpenAI, GPT-5, Sora, Board Saga, Elon Musk, Ilya, Power &amp; AGI</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2024-03-18</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Yann LeCun: Meta AI, Open Source, Limits of LLMs, AGI &amp; the Future of AI</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2024-02-12</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Andrej Karpathy: Tesla AI, Self-Driving, Optimus, Aliens, and AGI</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2024-01-28</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Jeff Bezos: Amazon, Blue Origin, Wealth, Nuclear Weapons &amp; Relationships</div>
+        <div class="status">
+          <span class="status-dot pending"></span>
+          Needs analysis
+        </div>
+        <span class="date">2023-12-14</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Mark Zuckerberg: First Interview in the Metaverse</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2023-11-20</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Javier Milei: Argentina, Inflation, Freedom, Corruption &amp; the Future</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2023-10-07</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Elon Musk: War, AI, Aliens, Politics, Physics, Video Games &amp; Humanity</div>
+        <div class="status">
+          <span class="status-dot ready"></span>
+          Analysis ready
+        </div>
+        <span class="date">2023-09-14</span>
+      </a>
+
+      <a class="video-row" href="#">
+        <div class="title">Demis Hassabis: DeepMind, AlphaFold, and the Quest for AGI</div>
+        <div class="status">
+          <span class="status-dot pending"></span>
+          Needs analysis
+        </div>
+        <span class="date">2023-08-21</span>
+      </a>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     VIEW 3: VIDEO WORKSPACE — The Main Event
+     ══════════════════════════════════════════════ -->
+<div id="view-video" class="view video-workspace">
+  <div class="page">
+
+    <div class="breadcrumb animate-in">
+      <a href="#" onclick="showView('home'); return false;">Library</a>
+      <span class="sep">/</span>
+      <a href="#" onclick="showView('channel'); return false;">Lex Fridman</a>
+      <span class="sep">/</span>
+      <span>Video</span>
+    </div>
+
+    <div class="video-meta-bar animate-in delay-1">
+      <div class="left">
+        <a class="channel-link" href="#" onclick="showView('channel'); return false;">Lex Fridman</a>
+        <span class="date-text">March 18, 2024</span>
+      </div>
+      <div class="topics">
+        <span class="topic-chip accent">AI &amp; Machine Learning</span>
+        <span class="topic-chip">Business</span>
+        <span class="topic-chip">Philosophy</span>
+      </div>
+    </div>
+
+    <h1 class="video-title animate-in delay-1">Sam Altman: OpenAI, GPT-5, Sora, Board Saga, Elon Musk, Ilya, Power &amp; AGI</h1>
+
+    <!-- THE VIDEO PLAYER — Large, prominent -->
+    <div class="player-container animate-in delay-2">
+      <div class="player-aspect">
+        <div class="player-placeholder" onclick="this.innerHTML='<iframe src=\'https://www.youtube.com/embed/jvqFAi7vkBc?autoplay=1&rel=0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border:none\'></iframe>'">
+          <div class="play-btn">
+            <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5L8 5.5z"/></svg>
+          </div>
+          <span>Click to load player</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-bar animate-in delay-2">
+      <span>3 transcript parts &middot; ~28,400 words</span>
+      <a href="https://youtube.com/watch?v=jvqFAi7vkBc" target="_blank" rel="noopener">
+        Open on YouTube
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 5h5v5"/><path d="m10 14 9-9"/><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="topic-row animate-in delay-3">
+      <span class="topic-chip accent">AI &amp; Machine Learning</span>
+      <span class="topic-chip">Business Strategy</span>
+      <span class="topic-chip">Philosophy of AI</span>
+      <span class="topic-chip">AGI Safety</span>
+      <span class="topic-chip">Corporate Governance</span>
+    </div>
+
+    <!-- Content tabs: Analysis | Transcript -->
+    <div class="content-tabs animate-in delay-3">
+      <button class="content-tab active" onclick="switchTab('analysis')">Analysis</button>
+      <button class="content-tab" onclick="switchTab('transcript')">Transcript</button>
+    </div>
+
+    <!-- ── Analysis Tab ── -->
+    <div id="tab-analysis" class="tab-content active animate-in delay-4">
+      <div class="analysis-panel">
+
+        <div class="analysis-summary">
+          <div class="label">Summary</div>
+          <p>Sam Altman discusses OpenAI's trajectory toward AGI, the board crisis of late 2023, the competitive landscape with Google and Anthropic, his philosophical stance on AI safety, the development of GPT-5 and Sora, and his complex relationship with Elon Musk. The conversation reveals Altman's belief that AGI development requires both aggressive capability building and robust safety infrastructure, and his vision for a future where AI dramatically improves human quality of life.</p>
+        </div>
+
+        <div class="takeaways">
+          <h3>Key Takeaways</h3>
+
+          <div class="takeaway-item">
+            <span class="takeaway-num">1</span>
+            <span class="takeaway-text">OpenAI views AGI not as a single moment but as a gradual transition, with GPT-5 representing a significant step toward more general reasoning capabilities rather than a discrete "AGI moment."</span>
+          </div>
+
+          <div class="takeaway-item">
+            <span class="takeaway-num">2</span>
+            <span class="takeaway-text">The board crisis revealed fundamental tensions between nonprofit governance and the pace of commercial AI development, leading to structural changes that Altman believes make OpenAI more resilient.</span>
+          </div>
+
+          <div class="takeaway-item">
+            <span class="takeaway-num">3</span>
+            <span class="takeaway-text">Altman acknowledges that Sora's video generation capabilities raise novel safety questions that text-based models didn't, particularly around deepfakes and media authenticity.</span>
+          </div>
+
+          <div class="takeaway-item">
+            <span class="takeaway-num">4</span>
+            <span class="takeaway-text">The relationship with Elon Musk is characterized as a genuine philosophical disagreement about the right structure for AI development, not merely personal animosity.</span>
+          </div>
+
+          <div class="takeaway-item">
+            <span class="takeaway-num">5</span>
+            <span class="takeaway-text">Compute scaling remains the primary bottleneck, and OpenAI's partnership strategy reflects a belief that no single entity should or can develop AGI in isolation.</span>
+          </div>
+        </div>
+
+        <div class="action-items">
+          <h3>Action Items</h3>
+
+          <div class="action-item">
+            <div class="action-check"></div>
+            <span>Research the structural changes OpenAI made post-board-crisis for governance case study</span>
+          </div>
+
+          <div class="action-item">
+            <div class="action-check"></div>
+            <span>Compare GPT-5 capability claims against Claude 4 and Gemini Ultra benchmarks when available</span>
+          </div>
+
+          <div class="action-item">
+            <div class="action-check"></div>
+            <span>Review Sora's content authenticity approach and compare to industry watermarking standards</span>
+          </div>
+        </div>
+
+        <!-- Full markdown report -->
+        <div class="md-report">
+          <h2>Full Analysis Report</h2>
+
+          <p>This analysis was generated from the complete transcript of the Lex Fridman Podcast episode featuring Sam Altman, recorded on March 18, 2024. The conversation spans approximately 3 hours and covers topics ranging from technical AI capabilities to philosophical questions about the nature of intelligence.</p>
+
+          <h3>The AGI Timeline Question</h3>
+
+          <p>Altman's perspective on AGI timelines has evolved significantly since OpenAI's founding. In this conversation, he articulates a view that <strong>AGI is best understood as a spectrum rather than a binary threshold</strong>. This represents a departure from earlier OpenAI communications that implied a more discrete milestone.</p>
+
+          <blockquote>
+            <p>"I think the question of 'when will we have AGI' is actually the wrong question. The right question is 'when will AI systems be capable enough to meaningfully change the trajectory of scientific research?' And I think we're closer to that than most people realize."</p>
+          </blockquote>
+
+          <p>The implications of this framing are significant. By redefining AGI as a gradient, Altman effectively neutralizes criticism about missed timelines while maintaining the urgency that drives funding and talent acquisition.</p>
+
+          <h3>Board Crisis Post-Mortem</h3>
+
+          <p>The most revealing portion of the interview concerns the November 2023 board crisis. Altman provides a more nuanced account than his previous public statements, acknowledging that the board had <strong>legitimate concerns about the pace of commercialization</strong> even if their execution was flawed.</p>
+
+          <p>Key structural changes post-crisis include:</p>
+
+          <ul>
+            <li>Expanded board membership with more industry experience</li>
+            <li>Clearer separation between safety research and deployment decisions</li>
+            <li>New mechanisms for internal dissent and whistleblowing</li>
+            <li>Revised charter language around the nonprofit mission</li>
+          </ul>
+
+          <h3>Technical Roadmap</h3>
+
+          <p>While deliberately vague about specific capabilities, Altman hints at several directions for GPT-5 and beyond. The emphasis on <strong>reasoning and planning</strong> suggests a shift from pure language modeling toward more structured cognitive architectures. The mention of <code>chain-of-thought</code> improvements and multi-step problem solving aligns with recent research on reasoning-focused training.</p>
+
+          <pre><code>Key capability vectors mentioned:
+  - Improved reasoning and multi-step planning
+  - Better calibration (knowing what it knows)
+  - Multimodal integration (text, image, video, audio)
+  - Longer context and better memory
+  - Tool use and agentic behavior</code></pre>
+
+          <hr>
+
+          <p><strong>Analysis generated by Claude</strong> on March 19, 2024 from 3 transcript parts totaling ~28,400 words.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Transcript Tab ── -->
+    <div id="tab-transcript" class="tab-content">
+      <div class="transcript-panel">
+
+        <div class="transcript-section">
+          <div class="transcript-section-header">
+            <h4>Part 1 of 3</h4>
+            <span class="word-count">9,847 words</span>
+          </div>
+          <div class="transcript-text">
+            <p>The following is a conversation with Sam Altman, CEO of OpenAI, the company behind GPT-4, ChatGPT, Sora, and DALL-E. This is his third time on this podcast, and given everything that has happened recently, including the mass board saga, there was a lot to talk about. This is the Lex Fridman Podcast. To support it, please check out our sponsors in the description.</p>
+
+            <p>Let me start with the board situation. What happened in November when you were fired and then came back? Can you tell the full story as you understand it? I realize there's a lot of complexity and nuance here, and different people see things differently, but I'd like to hear your honest perspective on what happened.</p>
+
+            <p>Yeah. So I'll give you my honest perspective. I should note that I think this is one of those situations where different people genuinely experienced the events quite differently, and I don't think anyone is being dishonest. But here is how I experienced it. I got a text message from Ilya on a Thursday evening asking if we could talk on Friday. That was unusual but not unprecedented. We talked regularly. But the timing felt a little off.</p>
+
+            <p>When I got on the call with him, it was a Google Meet, which was also a little unusual. And he told me that the board had decided to remove me. He was compassionate about it, but firm. I was genuinely shocked. I asked what specifically had prompted this decision, and I didn't get a clear answer. Something about the board losing confidence, which is a phrase that I still think about a lot. What does it mean for a board to lose confidence? Confidence in what specifically?</p>
+
+            <p>The hours after that were a blur. I remember calling a few people, trying to understand what was happening. The company's reaction was overwhelming and honestly really moving. The fact that nearly the entire company signed a letter saying they would leave if the board didn't reverse course, that tells you something about the culture we had built. But it was also scary, because I never wanted to be the reason the company was at risk.</p>
+
+            <p>The thing I keep coming back to is that the board had real concerns. I disagree with how they handled it, obviously. But the underlying tension between building commercially successful AI products and staying true to the nonprofit mission, that's a genuine tension. It's one that I think about every single day. And I think the structural changes we've made since then actually make us better positioned to navigate that tension going forward.</p>
+          </div>
+        </div>
+
+        <div class="transcript-section">
+          <div class="transcript-section-header">
+            <h4>Part 2 of 3</h4>
+            <span class="word-count">10,203 words</span>
+          </div>
+          <div class="transcript-text">
+            <p>Let's talk about GPT-5. What can you tell me about it? Not in terms of specific benchmarks, but what is the vision? What should GPT-5 be able to do that GPT-4 can't?</p>
+
+            <p>So I'll try to be as concrete as I can without getting into trouble. The biggest thing is reasoning. GPT-4 can reason in some contexts, but it's inconsistent. It will solve a complex logic puzzle one moment and then fail at a simple math problem the next. GPT-5 should be dramatically more consistent in its reasoning ability. We want it to be the kind of system where, if it says it's confident about something, you can actually trust that confidence estimate.</p>
+
+            <p>The second big area is planning. Multi-step planning where the system can take a complex goal, break it down into sub-tasks, execute them in sequence, and recover from failures along the way. This is where the agentic capabilities become really important. We're not just building a chatbot. We're building something that can be a genuine collaborator on complex work.</p>
+
+            <p>Third is multimodal fluency. GPT-4 can handle images and text, and we've added voice. But the integration is still somewhat surface-level. What we want is a system that reasons natively across modalities. Where a video is as natural an input as text. Where the system can generate a diagram to explain something instead of just describing it in words. Sora is a piece of this puzzle, but the full vision is broader.</p>
+
+            <p>And fourth, and this is maybe the most important, is what I'd call self-awareness about uncertainty. The system should know what it knows and what it doesn't know. It should be able to say "I'm not sure about this, here's what I think and here's my confidence level" in a way that's actually calibrated. Right now, language models are confidently wrong a lot. That has to change for these systems to be trustworthy in high-stakes applications.</p>
+          </div>
+        </div>
+
+        <div class="transcript-section">
+          <div class="transcript-section-header">
+            <h4>Part 3 of 3</h4>
+            <span class="word-count">8,350 words</span>
+          </div>
+          <div class="transcript-text">
+            <p>Let's talk about Elon. You two clearly have a complicated relationship. He was one of the co-founders of OpenAI, he's now suing the company, and he's building his own AI company, xAI. How do you think about that whole situation?</p>
+
+            <p>I have a lot of respect for Elon. I think his contributions to technology and humanity are genuinely important. Tesla, SpaceX, these are companies that have changed the world. And his early support of OpenAI was critical. We might not exist without it.</p>
+
+            <p>The disagreement, as I understand it, comes down to a fundamental question about how AI development should be structured. Elon believes, and I think sincerely, that AI development should be concentrated in a way that a single entity with the right values can control its trajectory. The original vision for OpenAI, at least as he saw it, was that entity.</p>
+
+            <p>I've come to believe that's the wrong approach. Not because Elon's values are wrong, but because no single entity, no matter how well-intentioned, should have that kind of power. The way I think about it now is that we need a diverse ecosystem of AI labs, all pushing the technology forward, with robust safety research and governance structures that can adapt as the technology evolves.</p>
+
+            <p>The lawsuit, I think, will ultimately be resolved. But the underlying question, how should AGI development be governed, that's a question humanity is going to be wrestling with for decades. And I don't think anyone has the full answer yet, including us.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     VIEW 4: KNOWLEDGE
+     ══════════════════════════════════════════════ -->
+<div id="view-knowledge" class="view">
+  <div class="page">
+
+    <div class="breadcrumb animate-in">
+      <a href="#" onclick="showView('home'); return false;">Library</a>
+      <span class="sep">/</span>
+      <span>Knowledge</span>
+    </div>
+
+    <header class="home-header animate-in delay-1">
+      <h1>Your reference <em>library.</em></h1>
+      <p>Long-form notes, essays, and research compiled from transcripts and independent study.</p>
+    </header>
+
+    <div class="section-label animate-in delay-2">Categories</div>
+
+    <div class="knowledge-grid animate-in delay-2">
+      <a class="knowledge-card" href="#">
+        <h3>AI Research</h3>
+        <p>Notes on transformer architecture, scaling laws, alignment theory, and interpretability.</p>
+      </a>
+      <a class="knowledge-card" href="#">
+        <h3>Neuroscience</h3>
+        <p>Sleep protocols, neuroplasticity, dopamine systems, and cognitive enhancement.</p>
+      </a>
+      <a class="knowledge-card" href="#">
+        <h3>Mathematics</h3>
+        <p>Linear algebra intuition, calculus visual proofs, and topology fundamentals.</p>
+      </a>
+      <a class="knowledge-card" href="#">
+        <h3>Philosophy</h3>
+        <p>Consciousness theories, ethics of technology, epistemology, and philosophy of mind.</p>
+      </a>
+      <a class="knowledge-card" href="#">
+        <h3>Web Development</h3>
+        <p>React patterns, server components, edge computing, and performance optimization.</p>
+      </a>
+      <a class="knowledge-card" href="#">
+        <h3>Business Strategy</h3>
+        <p>Startup governance, venture capital dynamics, and organizational design.</p>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <span>Transcript Library &middot; Private tool for friends</span>
+  <span>42 videos indexed</span>
+</footer>
+
+<script>
+  // ── View switching ──
+  function showView(viewName) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + viewName).classList.add('active');
+
+    document.querySelectorAll('.topbar-link').forEach(l => l.classList.remove('active'));
+    if (viewName === 'home' || viewName === 'channel' || viewName === 'video') {
+      document.getElementById('nav-library').classList.add('active');
+    } else if (viewName === 'knowledge') {
+      document.getElementById('nav-knowledge').classList.add('active');
+    }
+
+    window.scrollTo(0, 0);
+
+    // Re-trigger animations
+    const view = document.getElementById('view-' + viewName);
+    view.querySelectorAll('.animate-in').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // force reflow
+      el.style.animation = '';
+    });
+  }
+
+  // ── Tab switching (Analysis / Transcript) ──
+  function switchTab(tabName) {
+    document.querySelectorAll('.content-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+  }
+
+  // ── Channel search/filter ──
+  function filterChannels() {
+    const query = document.getElementById('channelSearch').value.toLowerCase();
+    const cards = document.querySelectorAll('.channel-card');
+
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(query) ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -8,9 +8,20 @@ import { VideoPlayerEmbed } from "@/components/VideoPlayerEmbed";
 import { absTranscriptPath, groupVideos, getVideo } from "@/modules/catalog";
 import { formatCount } from "@/lib/utils";
 
+/**
+ * Small SVG icon representing an external link (arrow-box motif).
+ *
+ * @returns An inline `<svg>` element sized at 1rem × 1rem.
+ */
 function ExternalIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M14 5h5v5" />
       <path d="M10 14 19 5" />
       <path d="M19 13v5a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" />
@@ -18,12 +29,25 @@ function ExternalIcon() {
   );
 }
 
+/**
+ * Generates static route params for every video in the catalog so the
+ * `/video/[videoId]` segment can be pre-rendered at build time.
+ *
+ * @returns An array of `{ videoId }` param objects.
+ */
 export function generateStaticParams() {
   return Array.from(groupVideos().values()).map((video) => ({
     videoId: video.videoId,
   }));
 }
 
+/**
+ * Video detail page — embeds the YouTube player, renders video metadata, the
+ * analysis workspace (with SSE-driven live status), and the full multi-part
+ * transcript. Transcript file contents are read server-side at render time.
+ *
+ * @param params - Resolved route params containing the percent-encoded videoId.
+ */
 export default async function VideoPage({ params }: { params: Promise<{ videoId: string }> }) {
   const { videoId } = await params;
   const id = decodeURIComponent(videoId);
@@ -32,11 +56,16 @@ export default async function VideoPage({ params }: { params: Promise<{ videoId:
   if (!video) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-        <h1 className="font-display text-4xl tracking-[-0.04em] text-[var(--ink)]">Video not found</h1>
+        <h1 className="font-display text-4xl tracking-[-0.04em] text-[var(--ink)]">
+          Video not found
+        </h1>
         <p className="mt-3 max-w-md text-sm leading-6 text-[var(--muted)]">
           The requested video does not exist in the local transcript index.
         </p>
-        <Link href="/" className="mt-6 inline-flex items-center justify-center rounded-2xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:bg-[var(--accent-strong)]">
+        <Link
+          href="/"
+          className="mt-6 inline-flex items-center justify-center rounded-2xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)] transition hover:bg-[var(--accent-strong)]"
+        >
           Return to library
         </Link>
       </div>
@@ -65,11 +94,13 @@ export default async function VideoPage({ params }: { params: Promise<{ videoId:
     <div className="space-y-8 pb-12">
       {/* Breadcrumb */}
       <div className="pt-2">
-        <Breadcrumb items={[
-          { label: "Library", href: "/" },
-          { label: video.channel, href: `/channel/${encodeURIComponent(video.channel)}` },
-          { label: video.title },
-        ]} />
+        <Breadcrumb
+          items={[
+            { label: "Library", href: "/" },
+            { label: video.channel, href: `/channel/${encodeURIComponent(video.channel)}` },
+            { label: video.title },
+          ]}
+        />
       </div>
 
       {/* Player */}

@@ -1,3 +1,7 @@
+/**
+ * Root-level loading skeleton — mirrors the layout of the home page with animated
+ * placeholders for the hero stat row and the channel card grid.
+ */
 export default function Loading() {
   return (
     <div className="space-y-10 pb-16">

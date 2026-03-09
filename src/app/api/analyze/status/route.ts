@@ -17,6 +17,16 @@ type StatusResponse = {
   error?: string;
 };
 
+/**
+ * GET /api/analyze/status
+ * Returns the current analysis lifecycle status for a video. Reconciles a stale
+ * "running" entry by writing a "failed" tombstone when the worker PID is gone,
+ * and falls back to checking for `analysis.md` when no `status.json` exists.
+ *
+ * @param req - Incoming request. Expects `?videoId=` query param.
+ * @returns JSON `StatusResponse` (`{ status, startedAt?, error? }`), or a 400
+ *   error if the videoId is invalid. Always served with `Cache-Control: no-store`.
+ */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const videoId = url.searchParams.get("videoId") || "";

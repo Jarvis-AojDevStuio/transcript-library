@@ -1,0 +1,89 @@
+{
+  "skill_name": "RepoArchitect",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm starting a new TypeScript SaaS project for dental practice management. It'll use Next.js 16 with App Router, Clerk for auth, Supabase for DB, and Stripe for billing. I need a proper repo structure that enforces module boundaries. Can you set up the project structure?",
+      "expected_output": "Should produce a complete A-G output with canonical directory tree including src/modules/ for auth, billing, offices, db modules. Should include ESLint no-restricted-imports config for SDK boundary enforcement. Should recommend SaaSStandards co-activation.",
+      "assertions": [
+        {
+          "name": "includes-modules-directory",
+          "description": "Output includes src/modules/ directory with at least auth, billing, and db modules",
+          "type": "content_check"
+        },
+        {
+          "name": "includes-eslint-config",
+          "description": "Output includes ESLint no-restricted-imports configuration for SDK boundaries",
+          "type": "content_check"
+        },
+        {
+          "name": "recommends-saas-standards",
+          "description": "Output mentions SaaSStandards skill activation for auth and onboarding patterns",
+          "type": "content_check"
+        },
+        {
+          "name": "includes-check-structure-script",
+          "description": "Output includes check-structure.sh or equivalent CI health check",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Audit the repo at ~/Projects/scratch — I want to know if the structure is healthy, what framework it best matches, and what needs fixing. Give me a full health report.",
+      "expected_output": "Should scan the repo structure, classify against 8 framework archetypes, run health checks (structural, metadata if applicable, unknown-bucket, module boundary if src/modules exists), produce a scored report with FAIL/WARN/INFO breakdown, and offer to create a refactor plan if score is low.",
+      "assertions": [
+        {
+          "name": "scans-directory-structure",
+          "description": "Agent actually scans the repo structure using Glob or similar tools",
+          "type": "behavior_check"
+        },
+        {
+          "name": "classifies-framework",
+          "description": "Output classifies the repo against one or more of the 8 framework archetypes",
+          "type": "content_check"
+        },
+        {
+          "name": "produces-health-score",
+          "description": "Output includes a numerical health score or pass/fail breakdown",
+          "type": "content_check"
+        },
+        {
+          "name": "provides-recommendations",
+          "description": "Output includes prioritized recommendations for structural improvements",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "My transcript-library repo at ~/Projects/transcript-library is messy. I want to restructure it. Create a refactor plan with a Move Map, but I'm running this from Codex CLI so keep that in mind for execution options.",
+      "expected_output": "Should detect the agent as codex-cli (or handle the stated context), scan current structure, select target framework, generate Move Map with phased migration. In Step 8 (Present and Ask), should NOT offer 'Execute via Codex' option since we're already in Codex — should offer 'Execute directly' instead.",
+      "assertions": [
+        {
+          "name": "acknowledges-codex-context",
+          "description": "Output acknowledges or adapts to the Codex CLI execution context",
+          "type": "content_check"
+        },
+        {
+          "name": "generates-move-map",
+          "description": "Output includes a Move Map table with old/new paths and categories",
+          "type": "content_check"
+        },
+        {
+          "name": "no-circular-delegation",
+          "description": "Output does NOT offer 'Execute via Codex' as an option (would be circular)",
+          "type": "content_check"
+        },
+        {
+          "name": "offers-direct-execution",
+          "description": "Output offers direct execution or save-plan-only as options",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

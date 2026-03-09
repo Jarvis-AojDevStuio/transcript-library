@@ -1,0 +1,4 @@
+[2026-03-07T06:26:38.428Z] Setup init hook started for: /Users/ossieirondi/Projects/transcript-library
+[2026-03-07T06:26:38.428Z] Hook event: SessionStart
+[2026-03-07T06:26:38.428Z] Installing dependencies with bun...
+[2026-03-07T06:26:39.534Z] bun install completed successfully

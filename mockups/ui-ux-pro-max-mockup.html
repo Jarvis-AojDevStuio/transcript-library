@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcript Library - UI Redesign Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================
+     DESIGN TOKENS
+     ============================ */
+  :root {
+    --bg: #f0ede6;
+    --bg-warm: #ebe7de;
+    --surface: #faf8f4;
+    --surface-elevated: #ffffff;
+    --surface-sunken: #e8e4db;
+    --ink: #1a1814;
+    --ink-secondary: #3d3830;
+    --ink-muted: #7a7265;
+    --ink-faint: #a69e92;
+    --accent: #2d5dd4;
+    --accent-hover: #2350b8;
+    --accent-soft: rgba(45, 93, 212, 0.08);
+    --accent-softer: rgba(45, 93, 212, 0.04);
+    --warm: #c4742a;
+    --warm-soft: rgba(196, 116, 42, 0.08);
+    --line: rgba(26, 24, 20, 0.08);
+    --line-strong: rgba(26, 24, 20, 0.14);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow-sm: 0 1px 3px rgba(26, 24, 20, 0.06);
+    --shadow-md: 0 4px 16px rgba(26, 24, 20, 0.07);
+    --shadow-lg: 0 12px 40px rgba(26, 24, 20, 0.09);
+    --shadow-player: 0 20px 60px rgba(26, 24, 20, 0.14);
+    --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  }
+
+  /* ============================
+     RESET & BASE
+     ============================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: none; background: none; }
+  img { display: block; max-width: 100%; }
+
+  /* ============================
+     LAYOUT
+     ============================ */
+  .page-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ============================
+     NAVIGATION BAR
+     ============================ */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(240, 237, 230, 0.85);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    transition: all 0.15s ease;
+  }
+
+  .nav-link:hover, .nav-link.active {
+    color: var(--ink);
+    background: rgba(26, 24, 20, 0.04);
+  }
+
+  .nav-link.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .nav-pill {
+    margin-left: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  /* ============================
+     VIEW TABS (for mockup switching)
+     ============================ */
+  .view-switcher {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 0;
+    gap: 8px;
+  }
+
+  .view-tab {
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    letter-spacing: 0.01em;
+  }
+
+  .view-tab:hover {
+    color: var(--ink);
+    background: var(--surface);
+  }
+
+  .view-tab.active {
+    color: var(--ink);
+    background: var(--surface-elevated);
+    border-color: var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ============================
+     HOME VIEW
+     ============================ */
+  .home-hero {
+    padding: 64px 0 48px;
+  }
+
+  .home-hero h1 {
+    font-family: var(--font-display);
+    font-size: 3.25rem;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+    max-width: 700px;
+  }
+
+  .home-hero p {
+    margin-top: 20px;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--ink-muted);
+    max-width: 560px;
+  }
+
+  .home-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 36px;
+  }
+
+  .home-stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .home-stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+
+  .home-stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 2px;
+  }
+
+  /* Channel Grid */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+
+  .section-count {
+    font-size: 0.8125rem;
+    color: var(--ink-faint);
+  }
+
+  .channel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .channel-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .channel-card:hover {
+    background: var(--surface-elevated);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .channel-card-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .channel-card-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .channel-card-meta span {
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+  }
+
+  .channel-card-meta span strong {
+    font-weight: 600;
+    color: var(--ink-secondary);
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    background: var(--surface-sunken);
+    color: var(--ink-muted);
+  }
+
+  .tag.accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .tag.warm {
+    background: var(--warm-soft);
+    color: var(--warm);
+  }
+
+  /* Recent Knowledge */
+  .knowledge-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 56px;
+  }
+
+  .knowledge-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .knowledge-card:hover {
+    background: var(--surface-elevated);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .knowledge-card-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+
+  .knowledge-card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+
+  /* ============================
+     CHANNEL VIEW
+     ============================ */
+  .channel-header {
+    padding: 48px 0 36px;
+  }
+
+  .channel-breadcrumb {
+    font-size: 0.8125rem;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .channel-breadcrumb a {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .channel-breadcrumb svg {
+    width: 14px;
+    height: 14px;
+    color: var(--ink-faint);
+  }
+
+  .channel-header h1 {
+    font-family: var(--font-display);
+    font-size: 2.75rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+  }
+
+  .channel-header-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .channel-header-meta span {
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+  }
+
+  /* Video list */
+  .video-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 56px;
+  }
+
+  .video-list-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+
+  .video-list-item:hover {
+    background: var(--surface-elevated);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .video-list-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .video-list-topic {
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+
+  .video-list-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .video-list-status.ready {
+    background: rgba(34, 139, 34, 0.08);
+    color: #1a7a1a;
+  }
+
+  .video-list-status.pending {
+    background: var(--surface-sunken);
+    color: var(--ink-faint);
+  }
+
+  .video-list-date {
+    font-size: 0.8125rem;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* Status dot */
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-dot.green { background: #22a722; }
+  .status-dot.gray { background: var(--ink-faint); }
+
+  /* ============================
+     VIDEO WORKSPACE VIEW
+     ============================ */
+  .workspace-breadcrumb {
+    padding: 20px 0 16px;
+    font-size: 0.8125rem;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .workspace-breadcrumb a {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Video Player */
+  .player-container {
+    background: #0d0d0d;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-player);
+    margin-bottom: 8px;
+  }
+
+  .player-aspect {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 */
+    background: #111;
+  }
+
+  .player-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 100%);
+    color: white;
+  }
+
+  .player-play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255,255,255,0.2);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .player-play-btn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.35);
+    transform: scale(1.05);
+  }
+
+  .player-play-btn svg {
+    width: 28px;
+    height: 28px;
+    margin-left: 3px;
+    fill: white;
+  }
+
+  .player-title-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px 32px 28px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  }
+
+  .player-title-overlay h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .player-title-overlay .player-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Video metadata bar */
+  .video-meta-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 32px;
+  }
+
+  .video-meta-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .video-meta-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink-secondary);
+    border: 1px solid var(--line-strong);
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface-elevated);
+    border-color: var(--ink-faint);
+  }
+
+  /* Analysis Content Area */
+  .analysis-section {
+    margin-bottom: 48px;
+  }
+
+  .analysis-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .analysis-section-title {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .analysis-section-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+
+  /* Summary card */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card p {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--ink-secondary);
+  }
+
+  /* Takeaway grid */
+  .takeaway-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .takeaway-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 24px;
+  }
+
+  .takeaway-number {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .takeaway-text {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: var(--ink-secondary);
+  }
+
+  /* Action items */
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .action-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+  }
+
+  .action-number {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .action-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-secondary);
+    padding-top: 4px;
+  }
+
+  /* ============================
+     MARKDOWN / FULL REPORT
+     ============================ */
+  .md-report {
+    background: var(--surface-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    padding: 48px 56px;
+    margin-bottom: 48px;
+    max-width: 100%;
+  }
+
+  .md-report h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    line-height: 1.15;
+    margin-bottom: 24px;
+  }
+
+  .md-report h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-top: 40px;
+    margin-bottom: 16px;
+  }
+
+  .md-report h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-top: 32px;
+    margin-bottom: 12px;
+  }
+
+  .md-report p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--ink-secondary);
+    margin-bottom: 16px;
+    max-width: 75ch;
+  }
+
+  .md-report ul, .md-report ol {
+    padding-left: 24px;
+    margin-bottom: 16px;
+  }
+
+  .md-report li {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--ink-secondary);
+    margin-bottom: 6px;
+    max-width: 75ch;
+  }
+
+  .md-report blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+    margin: 20px 0;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  .md-report code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.875em;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--line);
+    color: var(--accent);
+  }
+
+  .md-report pre {
+    background: #111827;
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .md-report pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: #e5e7eb;
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .md-report strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .md-report hr {
+    border: none;
+    height: 1px;
+    background: var(--line);
+    margin: 32px 0;
+  }
+
+  .md-report table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  .md-report th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .md-report td {
+    padding: 12px 16px;
+    font-size: 0.9375rem;
+    color: var(--ink-secondary);
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  /* Frontmatter metadata bar in markdown */
+  .md-frontmatter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .md-fm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--surface-sunken);
+    font-size: 0.75rem;
+  }
+
+  .md-fm-chip-key {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+  }
+
+  .md-fm-chip-value {
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+
+  /* ============================
+     TRANSCRIPT VIEW (full width)
+     ============================ */
+  .transcript-section {
+    margin-bottom: 48px;
+  }
+
+  .transcript-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .transcript-body {
+    background: var(--surface-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    padding: 40px 48px;
+  }
+
+  .transcript-chunk {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .transcript-chunk:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .transcript-chunk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .transcript-chunk-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+  }
+
+  .transcript-chunk-words {
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+
+  .transcript-text {
+    font-size: 1rem;
+    line-height: 2;
+    color: var(--ink-secondary);
+    column-count: 2;
+    column-gap: 48px;
+    column-rule: 1px solid var(--line);
+  }
+
+  .transcript-text.full-width {
+    column-count: 1;
+    max-width: 100%;
+    line-height: 1.9;
+  }
+
+  .transcript-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+  }
+
+  .transcript-toggle button {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    transition: all 0.15s ease;
+  }
+
+  .transcript-toggle button.active {
+    background: var(--surface-elevated);
+    color: var(--ink);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ============================
+     FOOTER
+     ============================ */
+  .footer {
+    padding: 32px 0;
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+
+  /* ============================
+     DESIGN NOTES PANEL
+     ============================ */
+  .design-notes {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 320px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 20px;
+    font-size: 0.8125rem;
+    z-index: 200;
+    display: none;
+  }
+
+  .design-notes.open { display: block; }
+
+  .design-notes h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+
+  .design-notes p {
+    line-height: 1.6;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+
+  .design-notes-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 201;
+    cursor: pointer;
+    font-size: 1.25rem;
+    border: none;
+  }
+
+  /* ============================
+     UTILITIES
+     ============================ */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--line);
+    margin: 48px 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================
+     NAVIGATION
+     ============================ -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">Transcript Library</a>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" data-view="home" onclick="switchView('home')">Library</a>
+      <a href="#" class="nav-link" data-view="channel" onclick="switchView('channel')">Channel</a>
+      <a href="#" class="nav-link" data-view="workspace" onclick="switchView('workspace')">Workspace</a>
+      <a href="#" class="nav-link" onclick="switchView('home')">Knowledge</a>
+      <span class="nav-pill">v2 Redesign</span>
+    </div>
+  </div>
+</nav>
+
+<!-- View Switcher -->
+<div class="page-container">
+  <div class="view-switcher" role="tablist" aria-label="Mockup views">
+    <button class="view-tab active" role="tab" onclick="switchView('home')" aria-selected="true">Home</button>
+    <button class="view-tab" role="tab" onclick="switchView('channel')" aria-selected="false">Channel</button>
+    <button class="view-tab" role="tab" onclick="switchView('workspace')" aria-selected="false">Video Workspace</button>
+  </div>
+</div>
+
+
+<!-- ============================
+     HOME VIEW
+     ============================ -->
+<div id="view-home" class="view active">
+  <div class="page-container">
+    <div class="home-hero">
+      <h1>Watch the source. Read the synthesis.</h1>
+      <p>A desktop research desk for reviewing YouTube transcripts alongside AI-generated analysis. No tabs, no context switching -- everything on one page.</p>
+      <div class="home-stats">
+        <div class="home-stat">
+          <span class="home-stat-value">47</span>
+          <span class="home-stat-label">Videos</span>
+        </div>
+        <div class="home-stat">
+          <span class="home-stat-value">6</span>
+          <span class="home-stat-label">Channels</span>
+        </div>
+        <div class="home-stat">
+          <span class="home-stat-value">23</span>
+          <span class="home-stat-label">Analyses</span>
+        </div>
+        <div class="home-stat">
+          <span class="home-stat-value">12</span>
+          <span class="home-stat-label">Knowledge</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2 class="section-title">Channels</h2>
+      <span class="section-count">6 channels</span>
+    </div>
+
+    <div class="channel-grid">
+      <div class="channel-card" onclick="switchView('channel')">
+        <div class="channel-card-name">Huberman Lab</div>
+        <div class="channel-card-meta">
+          <span><strong>14</strong> videos</span>
+          <span><strong>8</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">Neuroscience</span>
+          <span class="tag">Sleep</span>
+          <span class="tag">Dopamine</span>
+          <span class="tag">Protocols</span>
+        </div>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-card-name">Lex Fridman</div>
+        <div class="channel-card-meta">
+          <span><strong>11</strong> videos</span>
+          <span><strong>6</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">AI</span>
+          <span class="tag">Philosophy</span>
+          <span class="tag">Interviews</span>
+        </div>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-card-name">3Blue1Brown</div>
+        <div class="channel-card-meta">
+          <span><strong>8</strong> videos</span>
+          <span><strong>4</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">Mathematics</span>
+          <span class="tag">Linear Algebra</span>
+          <span class="tag">Calculus</span>
+        </div>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-card-name">Veritasium</div>
+        <div class="channel-card-meta">
+          <span><strong>6</strong> videos</span>
+          <span><strong>3</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">Physics</span>
+          <span class="tag">Science</span>
+          <span class="tag">Experiments</span>
+        </div>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-card-name">Y Combinator</div>
+        <div class="channel-card-meta">
+          <span><strong>5</strong> videos</span>
+          <span><strong>2</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">Startups</span>
+          <span class="tag">Fundraising</span>
+          <span class="tag">Product</span>
+        </div>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-card-name">Two Minute Papers</div>
+        <div class="channel-card-meta">
+          <span><strong>3</strong> videos</span>
+          <span><strong>0</strong> analyzed</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag accent">AI Research</span>
+          <span class="tag">Papers</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">Recent Knowledge</h2>
+      <span class="section-count">12 notes</span>
+    </div>
+
+    <div class="knowledge-strip">
+      <div class="knowledge-card">
+        <div class="knowledge-card-label">Research Notes</div>
+        <div class="knowledge-card-title">Dopamine Scheduling and Habit Formation</div>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-card-label">Analysis</div>
+        <div class="knowledge-card-title">Transformer Architecture Deep Dive</div>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-card-label">Summary</div>
+        <div class="knowledge-card-title">Linear Algebra Essentials for ML</div>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-card-label">Essay</div>
+        <div class="knowledge-card-title">The Feynman Technique Revisited</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="page-container">Transcript Library -- Desktop-first research tool for friends</div>
+  </footer>
+</div>
+
+
+<!-- ============================
+     CHANNEL VIEW
+     ============================ -->
+<div id="view-channel" class="view">
+  <div class="page-container">
+    <div class="channel-header">
+      <div class="channel-breadcrumb">
+        <a href="#" onclick="switchView('home')">Library</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span>Channel</span>
+      </div>
+      <h1>Huberman Lab</h1>
+      <div class="channel-header-meta">
+        <span>14 videos</span>
+        <span>8 analyses complete</span>
+        <span>Topics: Neuroscience, Sleep, Dopamine, Protocols, Focus, Stress</span>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">Videos</h2>
+      <span class="section-count">14 sessions</span>
+    </div>
+
+    <div class="video-list">
+      <div class="video-list-item" onclick="switchView('workspace')">
+        <div>
+          <div class="video-list-title">The Science of Setting and Achieving Goals</div>
+          <div class="video-list-topic">Neuroscience / Goal Setting</div>
+        </div>
+        <span class="video-list-status ready"><span class="status-dot green"></span> Analysis ready</span>
+        <span class="video-list-date">2024-12-15</span>
+      </div>
+      <div class="video-list-item">
+        <div>
+          <div class="video-list-title">Dopamine and the Drive to Pursue Goals</div>
+          <div class="video-list-topic">Neuroscience / Dopamine</div>
+        </div>
+        <span class="video-list-status ready"><span class="status-dot green"></span> Analysis ready</span>
+        <span class="video-list-date">2024-11-28</span>
+      </div>
+      <div class="video-list-item">
+        <div>
+          <div class="video-list-title">How to Optimize Your Sleep</div>
+          <div class="video-list-topic">Sleep / Protocols</div>
+        </div>
+        <span class="video-list-status ready"><span class="status-dot green"></span> Analysis ready</span>
+        <span class="video-list-date">2024-11-12</span>
+      </div>
+      <div class="video-list-item">
+        <div>
+          <div class="video-list-title">Using Cold Exposure for Health and Performance</div>
+          <div class="video-list-topic">Protocols / Cold Exposure</div>
+        </div>
+        <span class="video-list-status pending"><span class="status-dot gray"></span> Needs analysis</span>
+        <span class="video-list-date">2024-10-30</span>
+      </div>
+      <div class="video-list-item">
+        <div>
+          <div class="video-list-title">Focus Toolkit: How to Enhance Concentration</div>
+          <div class="video-list-topic">Neuroscience / Focus</div>
+        </div>
+        <span class="video-list-status ready"><span class="status-dot green"></span> Analysis ready</span>
+        <span class="video-list-date">2024-10-14</span>
+      </div>
+      <div class="video-list-item">
+        <div>
+          <div class="video-list-title">Understanding and Managing Stress</div>
+          <div class="video-list-topic">Stress / Nervous System</div>
+        </div>
+        <span class="video-list-status pending"><span class="status-dot gray"></span> Needs analysis</span>
+        <span class="video-list-date">2024-09-22</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="page-container">Transcript Library -- Desktop-first research tool for friends</div>
+  </footer>
+</div>
+
+
+<!-- ============================
+     VIDEO WORKSPACE VIEW
+     ============================ -->
+<div id="view-workspace" class="view">
+  <div class="page-container">
+    <div class="workspace-breadcrumb">
+      <a href="#" onclick="switchView('home')">Library</a>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <a href="#" onclick="switchView('channel')">Huberman Lab</a>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span>Video</span>
+    </div>
+
+    <!-- Large Video Player -->
+    <div class="player-container">
+      <div class="player-aspect">
+        <div class="player-placeholder">
+          <div class="player-play-btn" role="button" aria-label="Play video" tabindex="0">
+            <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5L8 5.5Z"/></svg>
+          </div>
+          <div class="player-title-overlay">
+            <h2>The Science of Setting and Achieving Goals</h2>
+            <div class="player-meta">
+              <span>Huberman Lab</span>
+              <span>Dec 15, 2024</span>
+              <span>2h 14m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metadata bar -->
+    <div class="video-meta-bar">
+      <div class="video-meta-tags">
+        <span class="tag accent">Neuroscience</span>
+        <span class="tag accent">Goal Setting</span>
+        <span class="tag">Protocols</span>
+        <span class="tag">Dopamine</span>
+        <span class="tag">Dec 15, 2024</span>
+        <span class="tag">4 transcript parts</span>
+      </div>
+      <div class="video-meta-actions">
+        <button class="btn btn-primary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Z"/></svg>
+          Refresh Analysis
+        </button>
+        <button class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 5h5v5"/><path d="M10 14 19 5"/><path d="M19 13v5a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>
+          YouTube
+        </button>
+      </div>
+    </div>
+
+    <!-- Analysis: Summary -->
+    <div class="analysis-section">
+      <div class="analysis-section-header">
+        <h2 class="analysis-section-title">Summary</h2>
+        <span class="analysis-section-badge">AI Generated</span>
+      </div>
+      <div class="summary-card">
+        <p>In this episode, Dr. Andrew Huberman discusses the neuroscience behind goal-setting and goal pursuit. He explains how the brain's reward circuitry, particularly the mesolimbic dopamine pathway, drives motivation and how understanding these systems can help us set more effective goals. The episode covers the role of the prefrontal cortex in planning, the importance of visual focus in maintaining attention on goals, and practical protocols for sustaining motivation during long-term pursuits. He also addresses common pitfalls like dopamine depletion from premature reward and offers evidence-based strategies for maintaining consistent progress.</p>
+      </div>
+    </div>
+
+    <!-- Analysis: Takeaways -->
+    <div class="analysis-section">
+      <div class="analysis-section-header">
+        <h2 class="analysis-section-title">Key Takeaways</h2>
+        <span class="analysis-section-badge">4 insights</span>
+      </div>
+      <div class="takeaway-grid">
+        <div class="takeaway-card">
+          <div class="takeaway-number">01</div>
+          <div class="takeaway-text">Visual focus directly maps to cognitive focus. Narrowing your visual field to a specific point activates the same neural circuits used for deep concentration on goals.</div>
+        </div>
+        <div class="takeaway-card">
+          <div class="takeaway-number">02</div>
+          <div class="takeaway-text">The "middle problem" -- motivation dips mid-pursuit because dopamine spikes at the start and near completion but drops in between. Chunking large goals into smaller milestones counteracts this.</div>
+        </div>
+        <div class="takeaway-card">
+          <div class="takeaway-number">03</div>
+          <div class="takeaway-text">Rewarding yourself during the effort, not after completion, is more effective for long-term motivation. Associating dopamine with the process builds sustainable drive.</div>
+        </div>
+        <div class="takeaway-card">
+          <div class="takeaway-number">04</div>
+          <div class="takeaway-text">Writing goals down and placing them in a visible location leverages the brain's visual processing system to keep goals active in working memory throughout the day.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analysis: Action Items -->
+    <div class="analysis-section">
+      <div class="analysis-section-header">
+        <h2 class="analysis-section-title">Action Items</h2>
+        <span class="analysis-section-badge">3 protocols</span>
+      </div>
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-number">1</div>
+          <div class="action-text">Practice the "visual target" protocol: before deep work, stare at a single point for 30-60 seconds to engage your focus circuitry. This primes the prefrontal cortex for sustained attention.</div>
+        </div>
+        <div class="action-item">
+          <div class="action-number">2</div>
+          <div class="action-text">Break quarterly goals into weekly "milestone sprints" of 5-7 days. Define clear completion criteria for each sprint to generate regular dopamine-driven satisfaction signals.</div>
+        </div>
+        <div class="action-item">
+          <div class="action-number">3</div>
+          <div class="action-text">Use a physical goal board placed at eye level near your workspace. Update it weekly. The visual reminder keeps your goals in working memory without conscious effort.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Markdown Report -->
+    <div class="analysis-section">
+      <div class="analysis-section-header">
+        <h2 class="analysis-section-title">Full Analysis Report</h2>
+        <span class="analysis-section-badge">Markdown</span>
+      </div>
+
+      <div class="md-report">
+        <div class="md-frontmatter">
+          <div class="md-fm-chip">
+            <span class="md-fm-chip-key">Channel</span>
+            <span class="md-fm-chip-value">Huberman Lab</span>
+          </div>
+          <div class="md-fm-chip">
+            <span class="md-fm-chip-key">Topic</span>
+            <span class="md-fm-chip-value">Neuroscience / Goal Setting</span>
+          </div>
+          <div class="md-fm-chip">
+            <span class="md-fm-chip-key">Published</span>
+            <span class="md-fm-chip-value">2024-12-15</span>
+          </div>
+          <div class="md-fm-chip">
+            <span class="md-fm-chip-key">Generated</span>
+            <span class="md-fm-chip-value">2026-03-07</span>
+          </div>
+          <div class="md-fm-chip">
+            <span class="md-fm-chip-key">Pattern</span>
+            <span class="md-fm-chip-value">Deep Analysis</span>
+          </div>
+        </div>
+
+        <h1>The Science of Setting and Achieving Goals</h1>
+
+        <p>This comprehensive analysis covers Dr. Andrew Huberman's detailed examination of the neuroscience underlying goal-setting, motivation, and sustained pursuit. The episode draws on peer-reviewed research to present actionable protocols grounded in our understanding of dopamine, the prefrontal cortex, and the autonomic nervous system.</p>
+
+        <h2>The Neural Architecture of Goal Pursuit</h2>
+
+        <p>Goal-directed behavior relies on a network of brain regions working in concert. The <strong>prefrontal cortex</strong> handles planning and decision-making, while the <strong>basal ganglia</strong> manages action selection and habit formation. The mesolimbic dopamine pathway -- running from the ventral tegmental area (VTA) to the nucleus accumbens -- provides the motivational fuel.</p>
+
+        <p>Huberman emphasizes that dopamine is not a "pleasure molecule" but rather a <strong>molecule of motivation and anticipation</strong>. It signals the potential for reward, driving us to pursue goals. Understanding this distinction is crucial because it reframes how we should structure our reward systems.</p>
+
+        <blockquote>
+          <p>"Dopamine is not about the reward itself. It's about the pursuit. The craving. The reaching. When you understand that, you can engineer your motivation systems."</p>
+        </blockquote>
+
+        <h2>The Visual Focus Protocol</h2>
+
+        <p>One of the most actionable findings discussed is the relationship between <strong>visual focus and cognitive focus</strong>. Research from Wendy Suzuki's lab at NYU demonstrates that narrowing your visual field (called "virgin optic flow" or focal vision) activates the same neural circuits used for deep concentration.</p>
+
+        <h3>Protocol Steps</h3>
+
+        <ol>
+          <li>Select a visual target at arm's length or across the room</li>
+          <li>Focus your gaze on that single point for 30-60 seconds</li>
+          <li>Allow your breathing to naturally slow as focus sharpens</li>
+          <li>Transition directly into your focused work task</li>
+          <li>When focus drifts, briefly return to the visual target protocol</li>
+        </ol>
+
+        <h2>Managing the "Middle Problem"</h2>
+
+        <p>A critical insight from the episode concerns what Huberman calls the <strong>"middle problem"</strong> -- the well-documented dip in motivation that occurs during the middle phase of any goal pursuit. Neuroimaging studies show that dopamine release follows a U-shaped curve: high at initiation, low in the middle, and rising again near completion.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Dopamine Level</th>
+              <th>Strategy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Initiation</td>
+              <td>High</td>
+              <td>Channel excitement into concrete planning</td>
+            </tr>
+            <tr>
+              <td>Middle</td>
+              <td>Low</td>
+              <td>Break into sub-goals; reward process not outcome</td>
+            </tr>
+            <tr>
+              <td>Near completion</td>
+              <td>Rising</td>
+              <td>Maintain standards; avoid rushing to finish</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr>
+
+        <h2>Practical Protocols Summary</h2>
+
+        <p>The episode concludes with a set of evidence-based protocols that listeners can implement immediately. These are designed to work with the brain's natural reward systems rather than against them.</p>
+
+        <ul>
+          <li><strong>Morning goal review</strong> -- Spend 2 minutes reviewing written goals upon waking to prime the prefrontal cortex</li>
+          <li><strong>Visual target protocol</strong> -- Use before deep work sessions to activate focus circuits</li>
+          <li><strong>Process reward</strong> -- Associate positive feelings with effort itself, not just outcomes</li>
+          <li><strong>Milestone chunking</strong> -- Break 90-day goals into weekly sprints with clear success criteria</li>
+          <li><strong>Cold exposure timing</strong> -- Use deliberate cold exposure (1-3 min cold shower) in the morning to boost baseline dopamine by 200-300%</li>
+        </ul>
+
+        <p>These protocols represent a synthesis of findings from multiple research groups and have been tested in clinical settings. The key principle underlying all of them is <strong>working with your neurochemistry rather than against it</strong>.</p>
+      </div>
+    </div>
+
+    <!-- Transcript Section (Full Width) -->
+    <div class="transcript-section">
+      <div class="transcript-header">
+        <div>
+          <h2 class="analysis-section-title">Transcript</h2>
+          <span style="font-size: 0.8125rem; color: var(--ink-faint); margin-top: 4px; display: block;">4 parts, 18,240 words</span>
+        </div>
+        <div class="transcript-toggle">
+          <button class="active" onclick="toggleTranscript(this, 'full-width')">Full width</button>
+          <button onclick="toggleTranscript(this, 'columns')">Columns</button>
+        </div>
+      </div>
+
+      <div class="transcript-body">
+        <div class="transcript-chunk">
+          <div class="transcript-chunk-header">
+            <span class="transcript-chunk-label">Part 1 of 4</span>
+            <span class="transcript-chunk-words">4,820 words</span>
+          </div>
+          <div class="transcript-text full-width" id="transcript-text">
+            Welcome to the Huberman Lab podcast where we discuss science and science-based tools for everyday life. I'm Andrew Huberman and I'm a professor of neurobiology and ophthalmology at Stanford School of Medicine. Today we're going to discuss the science of setting and achieving goals. Now, I know that there are many popular frameworks out there for goal setting. You've probably heard of SMART goals -- specific, measurable, achievable, relevant, and time-bound. And while those frameworks can be useful, today I want to go deeper. I want to explain the neural circuitry that underlies goal-directed behavior, because when you understand how your brain actually processes goals, you can leverage that biology to set better goals and, more importantly, to actually achieve them.
+
+            <br><br>
+
+            Let's start with the prefrontal cortex. This is the brain region that sits right behind your forehead, and it is absolutely critical for what we call executive function -- the ability to plan, to organize, to think about the future, and to resist impulses that would pull you away from your goals. Now, here's something really interesting: the prefrontal cortex doesn't fully mature until about age 25. This is why teenagers and young adults sometimes struggle with long-term planning and impulse control. But even in mature adults, the prefrontal cortex can be temporarily impaired by things like sleep deprivation, stress, and alcohol consumption.
+
+            <br><br>
+
+            So the first protocol I want to offer is this: if you are serious about achieving your goals, you need to take care of your prefrontal cortex. And the single most important thing you can do for prefrontal cortex function is to get adequate sleep. We've covered sleep in many episodes of this podcast, but the key point here is that during sleep, particularly during slow-wave sleep, the prefrontal cortex undergoes critical maintenance and repair processes. When you skimp on sleep, you're literally undermining the brain structure that you need most for goal pursuit.
+
+            <br><br>
+
+            Now let's talk about dopamine. Dopamine is a neuromodulator -- a chemical that modulates, or changes, the activity of neural circuits. And dopamine is absolutely central to goal-directed behavior. But here's where most people get it wrong: dopamine is not primarily a molecule of pleasure or reward. Dopamine is a molecule of motivation, of craving, of anticipation. It's the chemical signal that says, "That thing out there is worth pursuing. Go get it."
+          </div>
+        </div>
+
+        <div class="transcript-chunk">
+          <div class="transcript-chunk-header">
+            <span class="transcript-chunk-label">Part 2 of 4</span>
+            <span class="transcript-chunk-words">4,610 words</span>
+          </div>
+          <div class="transcript-text full-width">
+            This distinction between dopamine as motivation versus dopamine as pleasure is crucial for understanding goal pursuit. When you set a goal and feel excited about it, that excitement is driven by dopamine release in anticipation of the reward. And here's the key insight: the dopamine release is actually highest during the anticipation phase, not during the reward itself. Think about that. The brain generates more dopamine when you're pursuing the goal than when you actually achieve it.
+
+            <br><br>
+
+            This has profound implications for how we should structure our goal-pursuit strategies. If we front-load all the reward -- if we celebrate before we've actually done the work, or if we engage in activities that spike dopamine artificially -- we actually deplete the very neurochemical system that we need for sustained effort. This is why I recommend what I call "process-based rewards." Instead of rewarding yourself after you complete a goal, find ways to associate positive feelings with the effort itself.
+
+            <br><br>
+
+            Let me give you a concrete example. Let's say your goal is to write a book. Instead of telling yourself, "When I finish this book, I'll treat myself to a vacation," try this: during your writing sessions, deliberately generate a sense of satisfaction from the act of writing itself. You can do this by paying attention to the words appearing on the page, by noticing the progress you're making in real-time, and by internally acknowledging that this effort -- right now, in this moment -- is moving you toward your goal.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="page-container">Transcript Library -- Desktop-first research tool for friends</div>
+  </footer>
+</div>
+
+
+<!-- ============================
+     JAVASCRIPT
+     ============================ -->
+<script>
+function switchView(viewName) {
+  // Update views
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+
+  // Update tabs
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.remove('active');
+    t.setAttribute('aria-selected', 'false');
+  });
+  const tabs = document.querySelectorAll('.view-tab');
+  const viewMap = { home: 0, channel: 1, workspace: 2 };
+  if (tabs[viewMap[viewName]]) {
+    tabs[viewMap[viewName]].classList.add('active');
+    tabs[viewMap[viewName]].setAttribute('aria-selected', 'true');
+  }
+
+  // Update nav links
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  const navLink = document.querySelector('.nav-link[data-view="' + viewName + '"]');
+  if (navLink) navLink.classList.add('active');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleTranscript(btn, mode) {
+  // Update toggle buttons
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update all transcript text blocks
+  document.querySelectorAll('.transcript-text').forEach(el => {
+    if (mode === 'full-width') {
+      el.classList.add('full-width');
+    } else {
+      el.classList.remove('full-width');
+    }
+  });
+}
+</script>
+
+</body>
+</html>

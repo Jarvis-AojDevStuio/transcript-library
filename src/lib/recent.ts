@@ -1,3 +1,11 @@
+/**
+ * Recent-items helpers for the home feed.
+ *
+ * Provides TTL-cached lists of recently updated knowledge markdown files and
+ * recently completed video insight analyses.
+ *
+ * @module recent
+ */
 import fs from "node:fs";
 import {
   knowledgeMarkdownMtime,
@@ -7,6 +15,14 @@ import {
 } from "@/modules/knowledge";
 import { insightsBaseDir, analysisPath } from "@/lib/analysis";
 
+/**
+ * A recently updated knowledge base entry.
+ * @typedef {Object} RecentKnowledgeItem
+ * @property {string} category - Knowledge category directory name
+ * @property {string} relPath - Relative path of the markdown file within the category
+ * @property {string} title - Human-readable title derived from the file path
+ * @property {number} updatedAtMs - File mtime in milliseconds
+ */
 export type RecentKnowledgeItem = {
   category: string;
   relPath: string;
@@ -14,6 +30,12 @@ export type RecentKnowledgeItem = {
   updatedAtMs: number;
 };
 
+/**
+ * Returns the most recently modified knowledge markdown files across all
+ * categories, sorted by mtime descending.
+ * @param {number} [limit=8] - Maximum number of items to return
+ * @returns {RecentKnowledgeItem[]} Most recently updated knowledge items
+ */
 export function listRecentKnowledge(limit = 8): RecentKnowledgeItem[] {
   const out: RecentKnowledgeItem[] = [];
   const cats = listKnowledgeCategories();
@@ -34,6 +56,12 @@ export function listRecentKnowledge(limit = 8): RecentKnowledgeItem[] {
   return out.sort((a, b) => b.updatedAtMs - a.updatedAtMs).slice(0, Math.max(0, limit));
 }
 
+/**
+ * A recently completed video insight analysis.
+ * @typedef {Object} RecentInsightItem
+ * @property {string} videoId - YouTube video ID
+ * @property {number} updatedAtMs - mtime of `analysis.md` in milliseconds
+ */
 export type RecentInsightItem = {
   videoId: string;
   updatedAtMs: number;
@@ -43,6 +71,13 @@ export type RecentInsightItem = {
 const CACHE_TTL_MS = 5_000;
 let _recentInsightsCache: { expiresAt: number; items: RecentInsightItem[] } | undefined;
 
+/**
+ * Returns the most recently modified video insight analyses, sorted by
+ * `analysis.md` mtime descending. Results are cached for `CACHE_TTL_MS`
+ * milliseconds to avoid repeated directory scans.
+ * @param {number} [limit=8] - Maximum number of items to return
+ * @returns {RecentInsightItem[]} Most recently updated insight items
+ */
 export function listRecentInsights(limit = 8): RecentInsightItem[] {
   const now = Date.now();
   if (_recentInsightsCache && now < _recentInsightsCache.expiresAt) {

@@ -4,10 +4,20 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { listChannels, groupVideos } from "@/modules/catalog";
 import { hasInsight } from "@/modules/insights";
 
+/**
+ * URL-encodes a string for safe use in path segments.
+ *
+ * @param value - The raw string to encode.
+ * @returns The percent-encoded string.
+ */
 function enc(value: string) {
   return encodeURIComponent(value);
 }
 
+/**
+ * All Channels page — renders every channel in the catalog as a table with
+ * video counts, analyzed counts, and topic badges.
+ */
 export default async function ChannelsPage() {
   const channels = listChannels();
   const videos = groupVideos();
@@ -35,16 +45,16 @@ export default async function ChannelsPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-[var(--line)] bg-[var(--panel)]">
-              <th className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+              <th className="px-6 py-3 text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
                 Channel
               </th>
-              <th className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+              <th className="px-6 py-3 text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
                 Videos
               </th>
-              <th className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+              <th className="px-6 py-3 text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
                 Analyzed
               </th>
-              <th className="px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+              <th className="px-6 py-3 text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
                 Topics
               </th>
             </tr>
@@ -53,7 +63,10 @@ export default async function ChannelsPage() {
             {channels.map((channel) => {
               const analyzed = analyzedByChannel[channel.channel] || 0;
               return (
-                <tr key={channel.channel} className="group border-b border-[var(--line)] transition hover:bg-[var(--warm-soft)] last:border-b-0">
+                <tr
+                  key={channel.channel}
+                  className="group border-b border-[var(--line)] transition last:border-b-0 hover:bg-[var(--warm-soft)]"
+                >
                   <td className="px-6 py-4">
                     <Link
                       href={`/channel/${enc(channel.channel)}`}
@@ -63,7 +76,9 @@ export default async function ChannelsPage() {
                     </Link>
                   </td>
                   <td className="px-6 py-4 text-sm text-[var(--muted)]">
-                    <strong className="font-semibold text-[var(--ink)]">{channel.videoCount}</strong>
+                    <strong className="font-semibold text-[var(--ink)]">
+                      {channel.videoCount}
+                    </strong>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {analyzed > 0 ? (
@@ -81,13 +96,13 @@ export default async function ChannelsPage() {
                         <Badge
                           key={topic}
                           tone={i === 0 ? "amber" : "quiet"}
-                          className="text-[10px] px-2 py-0.5"
+                          className="px-2 py-0.5 text-[10px]"
                         >
                           {topic}
                         </Badge>
                       ))}
                       {channel.topics.length > 3 && (
-                        <Badge tone="quiet" className="text-[10px] px-2 py-0.5">
+                        <Badge tone="quiet" className="px-2 py-0.5 text-[10px]">
                           +{channel.topics.length - 3}
                         </Badge>
                       )}

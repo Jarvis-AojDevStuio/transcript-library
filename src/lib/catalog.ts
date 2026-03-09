@@ -1,7 +1,31 @@
+/**
+ * Video catalog built from the playlist-transcripts CSV index.
+ *
+ * Reads `videos.csv` from `PLAYLIST_TRANSCRIPTS_REPO`, groups multi-chunk
+ * videos into `Video` objects, and exposes cached lookups for channels and
+ * individual videos.
+ *
+ * @module catalog
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { cache } from "react";
 
+/**
+ * Raw row from the `videos.csv` index.
+ * @typedef {Object} VideoRow
+ * @property {string} video_id - Unique ID for this transcript chunk
+ * @property {string} parent_video_id - Parent video ID (empty for single-chunk videos)
+ * @property {string} title - Video title
+ * @property {string} channel - Channel name
+ * @property {string} topic - Topic/category label
+ * @property {string} published_date - ISO publication date string
+ * @property {string} ingested_date - ISO ingestion date string
+ * @property {string} word_count - Word count for this chunk (string from CSV)
+ * @property {string} chunk - Chunk index (string from CSV)
+ * @property {string} total_chunks - Total chunk count (string from CSV)
+ * @property {string} file_path - Relative path to the transcript file
+ */
 export type VideoRow = {
   video_id: string;
   parent_video_id: string;
@@ -16,6 +40,18 @@ export type VideoRow = {
   file_path: string;
 };
 
+/**
+ * Normalised video record, aggregating all transcript chunks.
+ * @typedef {Object} Video
+ * @property {string} videoId - Canonical YouTube video ID
+ * @property {string} title - Video title
+ * @property {string} channel - Channel name
+ * @property {string} topic - Topic/category label
+ * @property {string} publishedDate - ISO publication date string
+ * @property {string} ingestedDate - ISO ingestion date string
+ * @property {number} totalChunks - Total number of transcript parts
+ * @property {Array<{chunk: number, wordCount: number, filePath: string}>} parts - Ordered transcript parts
+ */
 export type Video = {
   videoId: string;
   title: string;
@@ -27,6 +63,14 @@ export type Video = {
   parts: Array<{ chunk: number; wordCount: number; filePath: string }>;
 };
 
+/**
+ * Aggregated summary for a single channel.
+ * @typedef {Object} ChannelSummary
+ * @property {string} channel - Channel name
+ * @property {string[]} topics - Distinct topics covered by this channel
+ * @property {number} videoCount - Number of videos from this channel
+ * @property {string} [lastPublishedDate] - ISO date of the most recently published video
+ */
 export type ChannelSummary = {
   channel: string;
   topics: string[];
@@ -34,6 +78,12 @@ export type ChannelSummary = {
   lastPublishedDate?: string;
 };
 
+/**
+ * Resolves the transcript repo root from the `PLAYLIST_TRANSCRIPTS_REPO` env var.
+ * @returns {string} Absolute path to the playlist-transcripts repo
+ * @throws {Error} If `PLAYLIST_TRANSCRIPTS_REPO` is not set
+ * @internal
+ */
 function repoRoot(): string {
   const repo = process.env.PLAYLIST_TRANSCRIPTS_REPO;
   if (!repo) {
@@ -44,10 +94,22 @@ function repoRoot(): string {
   return repo;
 }
 
+/**
+ * Returns the absolute path to the `videos.csv` index file.
+ * @returns {string} Path to `youtube-transcripts/index/videos.csv`
+ * @internal
+ */
 function csvPath(): string {
   return path.join(repoRoot(), "youtube-transcripts", "index", "videos.csv");
 }
 
+/**
+ * Minimal CSV line parser that handles quoted fields containing commas.
+ * Escaped double-quotes (`""`) inside quoted fields are unescaped.
+ * @param {string} line - A single CSV line
+ * @returns {string[]} Array of field values
+ * @internal
+ */
 function parseCsvLine(line: string): string[] {
   // Minimal CSV parser for this file format (rare quotes).
   // Handles quoted fields with commas.
@@ -83,6 +145,11 @@ let _cache:
     }
   | undefined;
 
+/**
+ * Reads and parses all rows from `videos.csv`.
+ * Results are cached in memory and invalidated when the file's mtime changes.
+ * @returns {VideoRow[]} All rows from the CSV index
+ */
 export function readVideoRows(): VideoRow[] {
   const p = csvPath();
   const st = fs.statSync(p);
@@ -124,6 +191,13 @@ let _videosCache:
     }
   | undefined;
 
+/**
+ * Groups CSV rows into a map of `videoId → Video`.
+ * Multi-chunk videos are merged; chunk parts are sorted by chunk index.
+ * Results are cached and invalidated when the CSV mtime changes.
+ * @param {VideoRow[]} [rows] - Pre-read rows; reads CSV if omitted
+ * @returns {Map<string, Video>} Map of canonical video ID to Video record
+ */
 export function groupVideos(rows?: VideoRow[]): Map<string, Video> {
   // Return cached map if CSV hasn't changed
   const p = csvPath();
@@ -173,6 +247,12 @@ export function groupVideos(rows?: VideoRow[]): Map<string, Video> {
   return map;
 }
 
+/**
+ * Returns all channels with aggregated video counts, topics, and latest
+ * published date, sorted by most recently published then alphabetically.
+ * Result is memoised by React's `cache` for the current request.
+ * @returns {ChannelSummary[]} Sorted channel summaries
+ */
 export const listChannels = cache(function listChannels(): ChannelSummary[] {
   const videos = Array.from(groupVideos().values());
   const byChannel = new Map<string, ChannelSummary>();
@@ -207,15 +287,32 @@ export const listChannels = cache(function listChannels(): ChannelSummary[] {
   });
 });
 
+/**
+ * Returns all videos for a given channel, sorted by published date descending.
+ * Result is memoised by React's `cache` for the current request.
+ * @param {string} channel - Channel name to filter by
+ * @returns {Video[]} Videos from the specified channel, newest first
+ */
 export const listVideosByChannel = cache(function listVideosByChannel(channel: string): Video[] {
   const videos = Array.from(groupVideos().values()).filter((v) => v.channel === channel);
   return videos.sort((a, b) => (b.publishedDate || "").localeCompare(a.publishedDate || ""));
 });
 
+/**
+ * Looks up a single video by its canonical ID.
+ * @param {string} videoId - YouTube video ID
+ * @returns {Video|undefined} The video record, or undefined if not found
+ */
 export function getVideo(videoId: string): Video | undefined {
   return groupVideos().get(videoId);
 }
 
+/**
+ * Resolves a relative transcript file path to an absolute path within the
+ * playlist-transcripts repo.
+ * @param {string} filePath - Relative path from the CSV `file_path` column
+ * @returns {string} Absolute path to the transcript file
+ */
 export function absTranscriptPath(filePath: string): string {
   return path.join(repoRoot(), "youtube-transcripts", filePath);
 }

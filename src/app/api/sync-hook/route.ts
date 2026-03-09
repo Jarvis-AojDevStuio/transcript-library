@@ -6,6 +6,14 @@ import { readStatus, isProcessAlive, analysisPath, spawnAnalysis } from "@/modul
 
 export const runtime = "nodejs";
 
+/**
+ * Validates the `Authorization: Bearer <token>` header against an expected token
+ * using a constant-time HMAC comparison to prevent timing attacks.
+ *
+ * @param req - Incoming request whose `authorization` header is inspected.
+ * @param expectedToken - The token value to compare against.
+ * @returns `true` if the provided token matches, `false` otherwise.
+ */
 function validateBearerToken(req: Request, expectedToken: string): boolean {
   const header = req.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -17,6 +25,16 @@ function validateBearerToken(req: Request, expectedToken: string): boolean {
   return crypto.timingSafeEqual(provided, expected);
 }
 
+/**
+ * POST /api/sync-hook
+ * Webhook handler that triggers a batch analysis pass for all videos that do not
+ * yet have an `analysis.md`. Returns immediately after token validation and
+ * processes the batch asynchronously so callers with short timeouts do not hang.
+ *
+ * @param req - Incoming request. Must carry a valid `Authorization: Bearer` token
+ *   matching the `SYNC_TOKEN` environment variable.
+ * @returns JSON `{ ok: true }` on success, or a 401 / 503 error response.
+ */
 export async function POST(req: Request) {
   const syncToken = process.env.SYNC_TOKEN;
   if (!syncToken) {
