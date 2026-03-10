@@ -36,32 +36,35 @@ export {
   structuredAnalysisPath,
 } from "./insight-paths";
 
+export type CompatibilityStatus = "running" | "complete" | "failed";
+export type RunLifecycle =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "interrupted"
+  | "reconciled";
+
 /**
  * Status file written to `status.json` for each analysis run.
- * @typedef {Object} StatusFile
- * @property {"running"|"complete"|"failed"} status - Current run state
- * @property {number} pid - Process ID of the worker
- * @property {string} startedAt - ISO timestamp when the run started
- * @property {string} [completedAt] - ISO timestamp when the run finished
- * @property {string} [error] - Error message if status is "failed"
+ * Keeps the legacy `status` field while publishing the richer lifecycle state.
  */
 export type StatusFile = {
-  status: "running" | "complete" | "failed";
-  pid: number;
+  schemaVersion: number;
+  videoId: string;
+  runId: string;
+  status: CompatibilityStatus;
+  lifecycle: RunLifecycle;
+  pid: number | null;
   startedAt: string;
   completedAt?: string;
   error?: string;
+  reconciledAt?: string;
+  reconciliationReason?: string;
 };
 
 /**
  * Metadata for a video used to build the analysis prompt.
- * @typedef {Object} AnalysisMeta
- * @property {string} videoId - YouTube video ID
- * @property {string} title - Video title
- * @property {string} channel - Channel name
- * @property {string} topic - Topic/category
- * @property {string} publishedDate - Publication date string
- * @property {string} [transcriptPartPath] - Optional path to transcript part file
  */
 export type AnalysisMeta = {
   videoId: string;
@@ -75,31 +78,217 @@ export type AnalysisMeta = {
 /** Supported analysis provider CLIs. */
 export type AnalysisProvider = "claude-cli" | "codex-cli";
 
+export type RunArtifacts = {
+  structuredFileName: string;
+  canonicalFileName: string;
+  displayFileName: string;
+  metadataFileName: string;
+  stdoutFileName: string;
+  stderrFileName: string;
+  attemptDirectory: string;
+  attemptRunFileName: string;
+  attemptStdoutFileName: string;
+  attemptStderrFileName: string;
+};
+
 /**
  * Run metadata written to `run.json` for each analysis run.
- * @typedef {Object} RunFile
- * @property {number} schemaVersion - Schema version for migrations
- * @property {AnalysisProvider} provider - Provider that executed the run
- * @property {string} [model] - Model used (if applicable)
- * @property {string} command - CLI command invoked
- * @property {string[]} args - Arguments passed to the command
- * @property {"running"|"complete"|"failed"} status - Run outcome
- * @property {string} videoId - YouTube video ID
- * @property {string} startedAt - ISO timestamp when the run started
- * @property {string} promptResolvedAt - ISO timestamp when the prompt was built
- * @property {number} pid - Process ID of the worker
- * @property {string} [completedAt] - ISO timestamp when the run finished
- * @property {number|null} [exitCode] - Process exit code
- * @property {string} [error] - Error message if status is "failed"
- * @property {Object} artifacts - Paths to output artifacts
- * @property {string} artifacts.structuredFileName - analysis.json
- * @property {string} artifacts.canonicalFileName - analysis.md
- * @property {string} artifacts.displayFileName - slugified title markdown
- * @property {string} artifacts.metadataFileName - video-metadata.json
- * @property {string} artifacts.stdoutFileName - worker-stdout.txt
- * @property {string} artifacts.stderrFileName - worker-stderr.txt
+ * `run.json` is the durable latest-run authority for a video.
  */
 export type RunFile = {
+  schemaVersion: number;
+  runId: string;
+  provider: AnalysisProvider;
+  model?: string;
+  command: string;
+  args: string[];
+  status: CompatibilityStatus;
+  lifecycle: RunLifecycle;
+  videoId: string;
+  startedAt: string;
+  promptResolvedAt: string;
+  pid: number | null;
+  completedAt?: string;
+  exitCode?: number | null;
+  error?: string;
+  reconciledAt?: string;
+  reconciliationReason?: string;
+  artifacts: RunArtifacts;
+};
+
+type ProviderSpec = {
+  provider: AnalysisProvider;
+  command: string;
+  args: string[];
+  model?: string;
+  outputMode: "stdout" | "file";
+  outputPath?: string;
+  env?: NodeJS.ProcessEnv;
+};
+
+type RunLifecycleWriteInput = Omit<RunFile, "schemaVersion" | "status" | "videoId"> & {
+  lifecycle: RunLifecycle;
+};
+
+declare global {
+  var __analysisRunningCount: number | undefined;
+}
+
+const MAX_CONCURRENT = 2;
+const RUN_SCHEMA_VERSION = 2;
+const WORKER_STDOUT_FILE = "worker-stdout.txt";
+const WORKER_STDERR_FILE = "worker-stderr.txt";
+const LEGACY_CLAUDE_STDOUT_FILE = "claude-stdout.txt";
+const LEGACY_CLAUDE_STDERR_FILE = "claude-stderr.txt";
+const ATTEMPTS_DIR = "runs";
+const ATTEMPT_RUN_FILE = "run.json";
+let _initialized = false;
+
+function compatibilityStatusForLifecycle(lifecycle: RunLifecycle): CompatibilityStatus {
+  if (lifecycle === "failed" || lifecycle === "interrupted") {
+    return "failed";
+  }
+
+  if (lifecycle === "completed" || lifecycle === "reconciled") {
+    return "complete";
+  }
+
+  return "running";
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+export function createRunId(now = new Date()): string {
+  const stamp = now.toISOString().replace(/[-:.TZ]/g, "");
+  return `${stamp}-${crypto.randomBytes(3).toString("hex")}`;
+}
+
+export function statusPath(videoId: string): string {
+  return path.join(insightDir(videoId), "status.json");
+}
+
+export function runMetadataPath(videoId: string): string {
+  return path.join(insightDir(videoId), "run.json");
+}
+
+export function stdoutLogPath(videoId: string): string {
+  return path.join(insightDir(videoId), WORKER_STDOUT_FILE);
+}
+
+export function stderrLogPath(videoId: string): string {
+  return path.join(insightDir(videoId), WORKER_STDERR_FILE);
+}
+
+export function legacyStdoutLogPath(videoId: string): string {
+  return path.join(insightDir(videoId), LEGACY_CLAUDE_STDOUT_FILE);
+}
+
+export function legacyStderrLogPath(videoId: string): string {
+  return path.join(insightDir(videoId), LEGACY_CLAUDE_STDERR_FILE);
+}
+
+export function runAttemptDir(videoId: string, runId: string): string {
+  return path.join(insightDir(videoId), ATTEMPTS_DIR, runId);
+}
+
+export function runAttemptMetadataPath(videoId: string, runId: string): string {
+  return path.join(runAttemptDir(videoId, runId), ATTEMPT_RUN_FILE);
+}
+
+export function attemptStdoutLogPath(videoId: string, runId: string): string {
+  return path.join(runAttemptDir(videoId, runId), WORKER_STDOUT_FILE);
+}
+
+export function attemptStderrLogPath(videoId: string, runId: string): string {
+  return path.join(runAttemptDir(videoId, runId), WORKER_STDERR_FILE);
+}
+
+function attemptProviderOutputPath(videoId: string, runId: string): string {
+  return path.join(runAttemptDir(videoId, runId), "provider-output.json");
+}
+
+function isStatusFile(val: unknown): val is StatusFile {
+  if (typeof val !== "object" || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  return (
+    typeof obj.runId === "string" &&
+    typeof obj.startedAt === "string" &&
+    typeof obj.lifecycle === "string" &&
+    (obj.status === "running" || obj.status === "complete" || obj.status === "failed")
+  );
+}
+
+function isLegacyStatusFile(val: unknown): val is {
+  status: "running" | "complete" | "failed";
+  pid: number;
+  startedAt: string;
+  completedAt?: string;
+  error?: string;
+} {
+  if (typeof val !== "object" || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  return (
+    (obj.status === "running" || obj.status === "complete" || obj.status === "failed") &&
+    typeof obj.pid === "number" &&
+    typeof obj.startedAt === "string"
+  );
+}
+
+function normalizeStatusFile(videoId: string, parsed: unknown): StatusFile | null {
+  if (isStatusFile(parsed)) {
+    return parsed;
+  }
+
+  if (!isLegacyStatusFile(parsed)) {
+    return null;
+  }
+
+  const runId = `legacy-${parsed.startedAt.replace(/[^0-9]/g, "").slice(0, 14) || "status"}`;
+  return {
+    schemaVersion: RUN_SCHEMA_VERSION,
+    videoId,
+    runId,
+    status: parsed.status,
+    lifecycle:
+      parsed.status === "complete"
+        ? "completed"
+        : parsed.status === "failed"
+          ? "failed"
+          : "running",
+    pid: parsed.pid,
+    startedAt: parsed.startedAt,
+    completedAt: parsed.completedAt,
+    error: parsed.error,
+  };
+}
+
+export function readStatus(videoId: string): StatusFile | null {
+  try {
+    const raw = fs.readFileSync(statusPath(videoId), "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    return normalizeStatusFile(videoId, parsed);
+  } catch {
+    return null;
+  }
+}
+
+function isRunFile(val: unknown): val is RunFile {
+  if (typeof val !== "object" || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  return (
+    typeof obj.runId === "string" &&
+    typeof obj.schemaVersion === "number" &&
+    (obj.provider === "claude-cli" || obj.provider === "codex-cli") &&
+    typeof obj.command === "string" &&
+    Array.isArray(obj.args) &&
+    typeof obj.lifecycle === "string" &&
+    typeof obj.startedAt === "string"
+  );
+}
+
+function isLegacyRunFile(val: unknown): val is {
   schemaVersion: number;
   provider: AnalysisProvider;
   model?: string;
@@ -121,229 +310,7 @@ export type RunFile = {
     stdoutFileName: string;
     stderrFileName: string;
   };
-};
-
-/**
- * Resolved provider configuration for spawning an analysis worker.
- * @typedef {Object} ProviderSpec
- * @property {AnalysisProvider} provider - Provider identifier
- * @property {string} command - CLI binary name
- * @property {string[]} args - Arguments for the CLI
- * @property {string} [model] - Model override
- * @property {"stdout"|"file"} outputMode - Where the provider writes output
- * @property {string} [outputPath] - Path for file output mode
- * @property {NodeJS.ProcessEnv} [env] - Environment overrides
- */
-type ProviderSpec = {
-  provider: AnalysisProvider;
-  command: string;
-  args: string[];
-  model?: string;
-  outputMode: "stdout" | "file";
-  outputPath?: string;
-  env?: NodeJS.ProcessEnv;
-};
-
-declare global {
-  var __analysisRunningCount: number | undefined;
-}
-
-/** Maximum concurrent analysis workers. */
-const MAX_CONCURRENT = 2;
-/** Schema version for run.json. */
-const RUN_SCHEMA_VERSION = 1;
-/** Filename for worker stdout log. */
-const WORKER_STDOUT_FILE = "worker-stdout.txt";
-/** Filename for worker stderr log. */
-const WORKER_STDERR_FILE = "worker-stderr.txt";
-/** Legacy Claude stdout filename (pre-worker rename). */
-const LEGACY_CLAUDE_STDOUT_FILE = "claude-stdout.txt";
-/** Legacy Claude stderr filename (pre-worker rename). */
-const LEGACY_CLAUDE_STDERR_FILE = "claude-stderr.txt";
-let _initialized = false;
-
-/**
- * Returns the number of analysis workers currently running.
- * Scans insight directories on first call to reconcile with live processes.
- * @returns {number} Count of running workers
- * @internal
- */
-function getRunningCount(): number {
-  if (!_initialized) {
-    _initialized = true;
-    let liveCount = 0;
-    try {
-      const entries = fs.readdirSync(insightsBaseDir(), { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const status = readStatus(entry.name);
-        if (status && status.status === "running" && isProcessAlive(status.pid)) {
-          liveCount++;
-        }
-      }
-    } catch {}
-    globalThis.__analysisRunningCount = liveCount;
-  }
-  return globalThis.__analysisRunningCount ?? 0;
-}
-
-/** Increments the running worker count. @internal */
-function incrementRunning(): void {
-  globalThis.__analysisRunningCount = getRunningCount() + 1;
-}
-
-/**
- * Decrements the running worker count. Call when a worker exits.
- * @returns {void}
- */
-export function decrementRunning(): void {
-  globalThis.__analysisRunningCount = Math.max(0, getRunningCount() - 1);
-}
-
-/**
- * Attempts to acquire a slot for a new analysis worker.
- * @returns {boolean} True if a slot was acquired, false if at capacity
- */
-export function tryAcquireSlot(): boolean {
-  if (getRunningCount() >= MAX_CONCURRENT) return false;
-  incrementRunning();
-  return true;
-}
-
-/**
- * Writes JSON to disk atomically via a temp file and rename.
- * Creates parent directories if needed.
- * @param {string} filePath - Target file path
- * @param {unknown} obj - Object to serialize as JSON
- * @throws {Error} On write or rename failure
- */
-export function atomicWriteJson(filePath: string, obj: unknown): void {
-  const dir = path.dirname(filePath);
-  fs.mkdirSync(dir, { recursive: true });
-  const tmp = `${filePath}.tmp_${crypto.randomBytes(6).toString("hex")}`;
-  const fd = fs.openSync(tmp, "w");
-  try {
-    fs.writeSync(fd, JSON.stringify(obj, null, 2));
-    fs.fsyncSync(fd);
-    fs.closeSync(fd);
-    fs.renameSync(tmp, filePath);
-  } catch (err) {
-    fs.closeSync(fd);
-    try {
-      fs.unlinkSync(tmp);
-    } catch {}
-    throw err;
-  }
-}
-
-/**
- * Checks whether a process is still running.
- * @param {number} pid - Process ID to check
- * @returns {boolean} True if the process exists and is alive
- */
-export function isProcessAlive(pid: number): boolean {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "EPERM") return true;
-    return false;
-  }
-}
-
-/**
- * Returns the path to status.json for a video.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to status.json
- */
-export function statusPath(videoId: string): string {
-  return path.join(insightDir(videoId), "status.json");
-}
-
-/**
- * Returns the path to run.json for a video.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to run.json
- */
-export function runMetadataPath(videoId: string): string {
-  return path.join(insightDir(videoId), "run.json");
-}
-
-/**
- * Returns the path to the worker stdout log.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to worker-stdout.txt
- */
-export function stdoutLogPath(videoId: string): string {
-  return path.join(insightDir(videoId), WORKER_STDOUT_FILE);
-}
-
-/**
- * Returns the path to the worker stderr log.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to worker-stderr.txt
- */
-export function stderrLogPath(videoId: string): string {
-  return path.join(insightDir(videoId), WORKER_STDERR_FILE);
-}
-
-/**
- * Returns the path to the legacy Claude stdout log.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to claude-stdout.txt
- */
-export function legacyStdoutLogPath(videoId: string): string {
-  return path.join(insightDir(videoId), LEGACY_CLAUDE_STDOUT_FILE);
-}
-
-/**
- * Returns the path to the legacy Claude stderr log.
- * @param {string} videoId - YouTube video ID
- * @returns {string} Path to claude-stderr.txt
- */
-export function legacyStderrLogPath(videoId: string): string {
-  return path.join(insightDir(videoId), LEGACY_CLAUDE_STDERR_FILE);
-}
-
-/**
- * Type guard for StatusFile.
- * @param {unknown} val - Value to check
- * @returns {val is StatusFile} True if val is a valid StatusFile
- * @internal
- */
-function isStatusFile(val: unknown): val is StatusFile {
-  if (typeof val !== "object" || val === null) return false;
-  const obj = val as Record<string, unknown>;
-  return (
-    (obj.status === "running" || obj.status === "complete" || obj.status === "failed") &&
-    typeof obj.pid === "number" &&
-    typeof obj.startedAt === "string"
-  );
-}
-
-/**
- * Reads and parses status.json for a video.
- * @param {string} videoId - YouTube video ID
- * @returns {StatusFile|null} Parsed status or null if missing/invalid
- */
-export function readStatus(videoId: string): StatusFile | null {
-  try {
-    const raw = fs.readFileSync(statusPath(videoId), "utf8");
-    const parsed: unknown = JSON.parse(raw);
-    return isStatusFile(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Type guard for RunFile.
- * @param {unknown} val - Value to check
- * @returns {val is RunFile} True if val is a valid RunFile
- * @internal
- */
-function isRunFile(val: unknown): val is RunFile {
+} {
   if (typeof val !== "object" || val === null) return false;
   const obj = val as Record<string, unknown>;
   return (
@@ -355,27 +322,57 @@ function isRunFile(val: unknown): val is RunFile {
   );
 }
 
-/**
- * Reads and parses run.json for a video.
- * @param {string} videoId - YouTube video ID
- * @returns {RunFile|null} Parsed run metadata or null if missing/invalid
- */
+function normalizeRunFile(videoId: string, parsed: unknown): RunFile | null {
+  if (isRunFile(parsed)) {
+    return parsed;
+  }
+
+  if (!isLegacyRunFile(parsed)) {
+    return null;
+  }
+
+  const runId = `legacy-${parsed.startedAt.replace(/[^0-9]/g, "").slice(0, 14) || "run"}`;
+  return {
+    schemaVersion: RUN_SCHEMA_VERSION,
+    runId,
+    provider: parsed.provider,
+    model: parsed.model,
+    command: parsed.command,
+    args: parsed.args,
+    status: parsed.status,
+    lifecycle:
+      parsed.status === "complete"
+        ? "completed"
+        : parsed.status === "failed"
+          ? "failed"
+          : "running",
+    videoId,
+    startedAt: parsed.startedAt,
+    promptResolvedAt: parsed.promptResolvedAt,
+    pid: parsed.pid,
+    completedAt: parsed.completedAt,
+    exitCode: parsed.exitCode,
+    error: parsed.error,
+    artifacts: {
+      ...parsed.artifacts,
+      attemptDirectory: path.join(ATTEMPTS_DIR, runId),
+      attemptRunFileName: ATTEMPT_RUN_FILE,
+      attemptStdoutFileName: parsed.artifacts.stdoutFileName,
+      attemptStderrFileName: parsed.artifacts.stderrFileName,
+    },
+  };
+}
+
 export function readRunMetadata(videoId: string): RunFile | null {
   try {
     const raw = fs.readFileSync(runMetadataPath(videoId), "utf8");
     const parsed: unknown = JSON.parse(raw);
-    return isRunFile(parsed) ? parsed : null;
+    return normalizeRunFile(videoId, parsed);
   } catch {
     return null;
   }
 }
 
-/**
- * Resolves PLAYLIST_TRANSCRIPTS_REPO from environment.
- * @returns {string} Absolute path to transcript repo
- * @throws {Error} If PLAYLIST_TRANSCRIPTS_REPO is not set
- * @internal
- */
 function resolveRepoRoot(): string {
   const repoRoot = process.env.PLAYLIST_TRANSCRIPTS_REPO;
   if (!repoRoot) {
@@ -384,12 +381,6 @@ function resolveRepoRoot(): string {
   return repoRoot;
 }
 
-/**
- * Builds HeadlessAnalysisMeta from AnalysisMeta with repo root.
- * @param {AnalysisMeta} meta - Video metadata
- * @returns {HeadlessAnalysisMeta} Enriched metadata for prompt building
- * @internal
- */
 function resolvePrompt(meta: AnalysisMeta): HeadlessAnalysisMeta {
   return enrichAnalysisMeta({
     videoId: meta.videoId,
@@ -402,17 +393,11 @@ function resolvePrompt(meta: AnalysisMeta): HeadlessAnalysisMeta {
   });
 }
 
-/**
- * Resolves provider configuration from env (ANALYSIS_PROVIDER, model vars).
- * @param {string} videoId - YouTube video ID (for output paths)
- * @returns {ProviderSpec} Resolved provider spec
- * @internal
- */
-function resolveProviderSpec(videoId: string): ProviderSpec {
+function resolveProviderSpec(videoId: string, runId: string): ProviderSpec {
   const configured = (process.env.ANALYSIS_PROVIDER ?? "claude-cli").trim().toLowerCase();
 
   if (configured === "codex-cli") {
-    const outputPath = path.join(insightDir(videoId), "provider-output.json");
+    const outputPath = attemptProviderOutputPath(videoId, runId);
     const model = process.env.CODEX_ANALYSIS_MODEL || process.env.ANALYSIS_MODEL || undefined;
     const args = [
       "exec",
@@ -450,32 +435,23 @@ function resolveProviderSpec(videoId: string): ProviderSpec {
   };
 }
 
-/**
- * Writes run metadata to run.json.
- * @param {string} videoId - YouTube video ID
- * @param {Omit<RunFile, "schemaVersion"|"videoId">} payload - Run metadata
- * @internal
- */
-function writeRunMetadata(
-  videoId: string,
-  payload: Omit<RunFile, "schemaVersion" | "videoId">,
-): void {
-  atomicWriteJson(runMetadataPath(videoId), {
-    schemaVersion: RUN_SCHEMA_VERSION,
-    videoId,
-    ...payload,
-  } satisfies RunFile);
-}
-
-function buildRunArtifacts(videoId: string, title: string): RunFile["artifacts"] {
-  return {
-    structuredFileName: path.basename(structuredAnalysisPath(videoId)),
-    canonicalFileName: path.basename(analysisPath(videoId)),
-    displayFileName: path.basename(displayAnalysisPath(videoId, title)),
-    metadataFileName: path.basename(metadataCachePath(videoId)),
-    stdoutFileName: path.basename(stdoutLogPath(videoId)),
-    stderrFileName: path.basename(stderrLogPath(videoId)),
-  };
+export function atomicWriteJson(filePath: string, obj: unknown): void {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.tmp_${crypto.randomBytes(6).toString("hex")}`;
+  const fd = fs.openSync(tmp, "w");
+  try {
+    fs.writeSync(fd, JSON.stringify(obj, null, 2));
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fs.renameSync(tmp, filePath);
+  } catch (err) {
+    fs.closeSync(fd);
+    try {
+      fs.unlinkSync(tmp);
+    } catch {}
+    throw err;
+  }
 }
 
 function atomicWriteText(filePath: string, contents: string): void {
@@ -483,6 +459,98 @@ function atomicWriteText(filePath: string, contents: string): void {
   const tmpPath = `${filePath}.tmp_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   fs.writeFileSync(tmpPath, contents);
   fs.renameSync(tmpPath, filePath);
+}
+
+function writeAttemptRunMetadata(videoId: string, run: RunFile): void {
+  atomicWriteJson(runAttemptMetadataPath(videoId, run.runId), run);
+}
+
+function writeStatusFromRun(videoId: string, run: RunFile): void {
+  atomicWriteJson(statusPath(videoId), {
+    schemaVersion: RUN_SCHEMA_VERSION,
+    videoId,
+    runId: run.runId,
+    status: run.status,
+    lifecycle: run.lifecycle,
+    pid: run.pid,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    error: run.error,
+    reconciledAt: run.reconciledAt,
+    reconciliationReason: run.reconciliationReason,
+  } satisfies StatusFile);
+}
+
+export function buildRunArtifacts(videoId: string, title: string, runId: string): RunArtifacts {
+  return {
+    structuredFileName: path.basename(structuredAnalysisPath(videoId)),
+    canonicalFileName: path.basename(analysisPath(videoId)),
+    displayFileName: path.basename(displayAnalysisPath(videoId, title)),
+    metadataFileName: path.basename(metadataCachePath(videoId)),
+    stdoutFileName: path.basename(stdoutLogPath(videoId)),
+    stderrFileName: path.basename(stderrLogPath(videoId)),
+    attemptDirectory: path.relative(insightDir(videoId), runAttemptDir(videoId, runId)),
+    attemptRunFileName: ATTEMPT_RUN_FILE,
+    attemptStdoutFileName: path.basename(attemptStdoutLogPath(videoId, runId)),
+    attemptStderrFileName: path.basename(attemptStderrLogPath(videoId, runId)),
+  };
+}
+
+export function writeRunLifecycle(videoId: string, payload: RunLifecycleWriteInput): RunFile {
+  const run: RunFile = {
+    schemaVersion: RUN_SCHEMA_VERSION,
+    videoId,
+    ...payload,
+    status: compatibilityStatusForLifecycle(payload.lifecycle),
+  };
+  atomicWriteJson(runMetadataPath(videoId), run);
+  writeAttemptRunMetadata(videoId, run);
+  writeStatusFromRun(videoId, run);
+  return run;
+}
+
+export function isProcessAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EPERM") return true;
+    return false;
+  }
+}
+
+function getRunningCount(): number {
+  if (!_initialized) {
+    _initialized = true;
+    let liveCount = 0;
+    try {
+      const entries = fs.readdirSync(insightsBaseDir(), { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const run = reconcileLatestRun(entry.name);
+        if (run?.lifecycle === "running" && run.pid && isProcessAlive(run.pid)) {
+          liveCount++;
+        }
+      }
+    } catch {}
+    globalThis.__analysisRunningCount = liveCount;
+  }
+  return globalThis.__analysisRunningCount ?? 0;
+}
+
+function incrementRunning(): void {
+  globalThis.__analysisRunningCount = getRunningCount() + 1;
+}
+
+export function decrementRunning(): void {
+  globalThis.__analysisRunningCount = Math.max(0, getRunningCount() - 1);
+}
+
+export function tryAcquireSlot(): boolean {
+  if (getRunningCount() >= MAX_CONCURRENT) return false;
+  incrementRunning();
+  return true;
 }
 
 function persistStructuredAnalysis(
@@ -495,30 +563,40 @@ function persistStructuredAnalysis(
   atomicWriteText(displayAnalysisPath(videoId, title), structured.reportMarkdown);
 }
 
-/**
- * Creates insight directory and initial artifact files.
- * @param {string} videoId - YouTube video ID
- * @param {HeadlessAnalysisMeta} resolvedMeta - Metadata to cache
- * @internal
- */
-function initializeArtifacts(videoId: string, resolvedMeta: HeadlessAnalysisMeta): void {
+function initializeArtifacts(
+  videoId: string,
+  runId: string,
+  resolvedMeta: HeadlessAnalysisMeta,
+): void {
   const outDir = insightDir(videoId);
   fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(runAttemptDir(videoId, runId), { recursive: true });
   fs.writeFileSync(stdoutLogPath(videoId), "");
   fs.writeFileSync(stderrLogPath(videoId), "");
+  fs.writeFileSync(attemptStdoutLogPath(videoId, runId), "");
+  fs.writeFileSync(attemptStderrLogPath(videoId, runId), "");
   try {
     fs.rmSync(path.join(outDir, "provider-output.json"), { force: true });
+    fs.rmSync(attemptProviderOutputPath(videoId, runId), { force: true });
   } catch {}
   atomicWriteJson(metadataCachePath(videoId), resolvedMeta);
 }
 
-/**
- * Reads provider output from file or concatenated stdout chunks.
- * @param {ProviderSpec} spec - Provider spec (determines output mode)
- * @param {Buffer[]} chunks - Stdout chunks (used when outputMode is "stdout")
- * @returns {string} Provider output text
- * @internal
- */
+function appendRunLog(
+  videoId: string,
+  runId: string,
+  stream: "stdout" | "stderr",
+  chunk: Buffer,
+): void {
+  const latestPath = stream === "stdout" ? stdoutLogPath(videoId) : stderrLogPath(videoId);
+  const attemptPath =
+    stream === "stdout"
+      ? attemptStdoutLogPath(videoId, runId)
+      : attemptStderrLogPath(videoId, runId);
+  fs.appendFileSync(latestPath, chunk);
+  fs.appendFileSync(attemptPath, chunk);
+}
+
 function readProviderOutput(spec: ProviderSpec, chunks: Buffer[]): string {
   if (spec.outputMode === "file") {
     return spec.outputPath ? fs.readFileSync(spec.outputPath, "utf8") : "";
@@ -526,12 +604,6 @@ function readProviderOutput(spec: ProviderSpec, chunks: Buffer[]): string {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/**
- * Spawns the analysis provider CLI with the given spec.
- * @param {ProviderSpec} spec - Provider configuration
- * @returns {ChildProcessWithoutNullStreams} Spawned child process
- * @internal
- */
 function spawnProvider(spec: ProviderSpec): ChildProcessWithoutNullStreams {
   return spawn(spec.command, spec.args, {
     env: spec.env ?? process.env,
@@ -540,16 +612,43 @@ function spawnProvider(spec: ProviderSpec): ChildProcessWithoutNullStreams {
   });
 }
 
-/**
- * Spawns a headless analysis worker for a video.
- * Builds the prompt, initializes artifacts, spawns the provider CLI, and wires
- * stdout/stderr to log files. On success, writes analysis.md and display file.
- * @param {string} videoId - YouTube video ID
- * @param {AnalysisMeta} meta - Video metadata for the prompt
- * @param {string} transcript - Full transcript text
- * @param {string} [logPrefix="[analyze]"] - Prefix for stderr logs
- * @returns {boolean} True if a slot was acquired and worker spawned, false otherwise
- */
+export function hasAnalysisArtifacts(videoId: string): boolean {
+  return fs.existsSync(analysisPath(videoId)) || fs.existsSync(structuredAnalysisPath(videoId));
+}
+
+export function reconcileLatestRun(
+  videoId: string,
+  options?: { now?: string; reason?: string },
+): RunFile | null {
+  const run = readRunMetadata(videoId);
+  if (!run) {
+    return null;
+  }
+
+  if (run.lifecycle !== "running") {
+    return run;
+  }
+
+  if (run.pid && isProcessAlive(run.pid)) {
+    return run;
+  }
+
+  return writeRunLifecycle(videoId, {
+    ...run,
+    lifecycle: "interrupted",
+    pid: run.pid ?? null,
+    completedAt: options?.now ?? nowIso(),
+    error: options?.reason ?? "worker missing after restart",
+    reconciledAt: options?.now ?? nowIso(),
+    reconciliationReason: options?.reason ?? "worker missing after restart",
+  });
+}
+
+export function __resetAnalysisRuntimeForTests(): void {
+  _initialized = false;
+  globalThis.__analysisRunningCount = 0;
+}
+
 export function spawnAnalysis(
   videoId: string,
   meta: AnalysisMeta,
@@ -558,7 +657,10 @@ export function spawnAnalysis(
 ): boolean {
   if (!tryAcquireSlot()) return false;
 
-  const promptResolvedAt = new Date().toISOString();
+  const runId = createRunId();
+  const promptResolvedAt = nowIso();
+  const provider = resolveProviderSpec(videoId, runId);
+
   let resolvedMeta: HeadlessAnalysisMeta;
   let prompt: string;
   try {
@@ -566,88 +668,108 @@ export function spawnAnalysis(
     prompt = buildHeadlessAnalysisPrompt(resolvedMeta, transcript);
   } catch (err) {
     decrementRunning();
-    atomicWriteJson(statusPath(videoId), {
-      status: "failed",
-      pid: 0,
+    writeRunLifecycle(videoId, {
+      runId,
+      provider: provider.provider,
+      model: provider.model,
+      command: provider.command,
+      args: provider.args,
+      lifecycle: "failed",
       startedAt: promptResolvedAt,
+      promptResolvedAt,
+      pid: null,
+      completedAt: promptResolvedAt,
+      exitCode: null,
       error: `prompt setup error: ${(err as Error).message}`,
+      artifacts: buildRunArtifacts(videoId, meta.title, runId),
     });
     return false;
   }
 
-  initializeArtifacts(videoId, resolvedMeta);
-  const provider = resolveProviderSpec(videoId);
+  initializeArtifacts(videoId, runId, resolvedMeta);
+  writeRunLifecycle(videoId, {
+    runId,
+    provider: provider.provider,
+    model: provider.model,
+    command: provider.command,
+    args: provider.args,
+    lifecycle: "queued",
+    startedAt: promptResolvedAt,
+    promptResolvedAt,
+    pid: null,
+    artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
+  });
 
   let child: ChildProcessWithoutNullStreams;
   try {
     child = spawnProvider(provider);
   } catch (err) {
     decrementRunning();
-    atomicWriteJson(statusPath(videoId), {
-      status: "failed",
-      pid: 0,
-      startedAt: promptResolvedAt,
-      error: `spawn error: ${(err as Error).message}`,
-    });
-    writeRunMetadata(videoId, {
+    writeRunLifecycle(videoId, {
+      runId,
       provider: provider.provider,
       model: provider.model,
       command: provider.command,
       args: provider.args,
-      status: "failed",
+      lifecycle: "failed",
       startedAt: promptResolvedAt,
       promptResolvedAt,
-      pid: 0,
-      completedAt: new Date().toISOString(),
+      pid: null,
+      completedAt: nowIso(),
       exitCode: null,
       error: `spawn error: ${(err as Error).message}`,
-      artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+      artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
     });
     return false;
   }
 
   if (child.pid === undefined) {
     decrementRunning();
-    atomicWriteJson(statusPath(videoId), {
-      status: "failed",
-      pid: 0,
+    writeRunLifecycle(videoId, {
+      runId,
+      provider: provider.provider,
+      model: provider.model,
+      command: provider.command,
+      args: provider.args,
+      lifecycle: "failed",
       startedAt: promptResolvedAt,
+      promptResolvedAt,
+      pid: null,
+      completedAt: nowIso(),
+      exitCode: null,
       error: `spawn failed: ${provider.command} not found`,
+      artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
     });
     return false;
   }
 
   const pid = child.pid;
-  const startedAt = new Date().toISOString();
+  const startedAt = nowIso();
   child.stdin.write(prompt);
   child.stdin.end();
 
-  atomicWriteJson(statusPath(videoId), {
-    status: "running",
-    pid,
-    startedAt,
-  });
-  writeRunMetadata(videoId, {
+  writeRunLifecycle(videoId, {
+    runId,
     provider: provider.provider,
     model: provider.model,
     command: provider.command,
     args: provider.args,
-    status: "running",
+    lifecycle: "running",
     startedAt,
     promptResolvedAt,
     pid,
-    artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+    artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
   });
 
-  const chunks: Buffer[] = [];
+  const stdoutChunks: Buffer[] = [];
   const stderrChunks: Buffer[] = [];
   child.stdout.on("data", (chunk: Buffer) => {
-    chunks.push(chunk);
-    fs.appendFileSync(stdoutLogPath(videoId), chunk);
+    stdoutChunks.push(chunk);
+    appendRunLog(videoId, runId, "stdout", chunk);
   });
   child.stderr.on("data", (chunk: Buffer) => {
     stderrChunks.push(chunk);
-    fs.appendFileSync(stderrLogPath(videoId), chunk);
+    appendRunLog(videoId, runId, "stderr", chunk);
   });
 
   const timeout = setTimeout(() => {
@@ -662,34 +784,28 @@ export function spawnAnalysis(
     clearTimeout(timeout);
     decrementRunning();
 
-    const completedAt = new Date().toISOString();
+    const completedAt = nowIso();
     const stderr = Buffer.concat(stderrChunks).toString("utf8");
     if (stderr) console.error(`${logPrefix} stderr for ${videoId}:`, stderr.slice(0, 2000));
 
     let output = "";
     try {
-      output = readProviderOutput(provider, chunks);
+      output = readProviderOutput(provider, stdoutChunks);
     } catch (err) {
-      atomicWriteJson(statusPath(videoId), {
-        status: "failed",
-        pid,
-        startedAt,
-        completedAt,
-        error: `output read error: ${(err as Error).message}`,
-      });
-      writeRunMetadata(videoId, {
+      writeRunLifecycle(videoId, {
+        runId,
         provider: provider.provider,
         model: provider.model,
         command: provider.command,
         args: provider.args,
-        status: "failed",
+        lifecycle: "failed",
         startedAt,
         promptResolvedAt,
         pid,
         completedAt,
         exitCode: code,
         error: `output read error: ${(err as Error).message}`,
-        artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+        artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
       });
       return;
     }
@@ -701,27 +817,21 @@ export function spawnAnalysis(
       } catch (err) {
         const error = `structured analysis validation failed: ${(err as Error).message}`;
         console.error(`${logPrefix} ${error}`);
-        fs.appendFileSync(stderrLogPath(videoId), `\n${error}\n`);
-        atomicWriteJson(statusPath(videoId), {
-          status: "failed",
-          pid,
-          startedAt,
-          completedAt,
-          error,
-        });
-        writeRunMetadata(videoId, {
+        appendRunLog(videoId, runId, "stderr", Buffer.from(`\n${error}\n`));
+        writeRunLifecycle(videoId, {
+          runId,
           provider: provider.provider,
           model: provider.model,
           command: provider.command,
           args: provider.args,
-          status: "failed",
+          lifecycle: "failed",
           startedAt,
           promptResolvedAt,
           pid,
           completedAt,
           exitCode: code,
           error,
-          artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+          artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
         });
         return;
       }
@@ -731,109 +841,86 @@ export function spawnAnalysis(
       } catch (err) {
         const error = `structured analysis write failed: ${(err as Error).message}`;
         console.error(`${logPrefix} ${error}`);
-        fs.appendFileSync(stderrLogPath(videoId), `\n${error}\n`);
-        atomicWriteJson(statusPath(videoId), {
-          status: "failed",
-          pid,
-          startedAt,
-          completedAt,
-          error,
-        });
-        writeRunMetadata(videoId, {
+        appendRunLog(videoId, runId, "stderr", Buffer.from(`\n${error}\n`));
+        writeRunLifecycle(videoId, {
+          runId,
           provider: provider.provider,
           model: provider.model,
           command: provider.command,
           args: provider.args,
-          status: "failed",
+          lifecycle: "failed",
           startedAt,
           promptResolvedAt,
           pid,
           completedAt,
           exitCode: code,
           error,
-          artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+          artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
         });
         return;
       }
 
-      atomicWriteJson(statusPath(videoId), {
-        status: "complete",
-        pid,
-        startedAt,
-        completedAt,
-      });
-      writeRunMetadata(videoId, {
+      writeRunLifecycle(videoId, {
+        runId,
         provider: provider.provider,
         model: provider.model,
         command: provider.command,
         args: provider.args,
-        status: "complete",
+        lifecycle: "completed",
         startedAt,
         promptResolvedAt,
         pid,
         completedAt,
         exitCode: code,
-        artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+        artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
       });
-    } else {
-      const stderrSummary = stderr
-        .trim()
-        .split(/\r?\n/)
-        .find((line) => line.trim().length > 0);
-      const error =
-        code === null
-          ? "process killed (timeout)"
-          : stderrSummary
-            ? `exit code ${code}: ${stderrSummary}`
-            : `exit code ${code}`;
-      atomicWriteJson(statusPath(videoId), {
-        status: "failed",
-        pid,
-        startedAt,
-        completedAt,
-        error,
-      });
-      writeRunMetadata(videoId, {
-        provider: provider.provider,
-        model: provider.model,
-        command: provider.command,
-        args: provider.args,
-        status: "failed",
-        startedAt,
-        promptResolvedAt,
-        pid,
-        completedAt,
-        exitCode: code,
-        error,
-        artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
-      });
+      return;
     }
+
+    const stderrSummary = stderr
+      .trim()
+      .split(/\r?\n/)
+      .find((line) => line.trim().length > 0);
+    const error =
+      code === null
+        ? "process killed (timeout)"
+        : stderrSummary
+          ? `exit code ${code}: ${stderrSummary}`
+          : `exit code ${code}`;
+    writeRunLifecycle(videoId, {
+      runId,
+      provider: provider.provider,
+      model: provider.model,
+      command: provider.command,
+      args: provider.args,
+      lifecycle: "failed",
+      startedAt,
+      promptResolvedAt,
+      pid,
+      completedAt,
+      exitCode: code,
+      error,
+      artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
+    });
   });
 
   child.on("error", (err) => {
     clearTimeout(timeout);
     decrementRunning();
-    const completedAt = new Date().toISOString();
-    atomicWriteJson(statusPath(videoId), {
-      status: "failed",
-      pid,
-      startedAt,
-      completedAt,
-      error: `spawn error: ${err.message}`,
-    });
-    writeRunMetadata(videoId, {
+    writeRunLifecycle(videoId, {
+      runId,
       provider: provider.provider,
       model: provider.model,
       command: provider.command,
       args: provider.args,
-      status: "failed",
+      lifecycle: "failed",
       startedAt,
       promptResolvedAt,
       pid,
-      completedAt,
+      completedAt: nowIso(),
       exitCode: child.exitCode,
       error: `spawn error: ${err.message}`,
-      artifacts: buildRunArtifacts(videoId, resolvedMeta.title),
+      artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
     });
   });
 

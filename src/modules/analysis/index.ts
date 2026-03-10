@@ -8,11 +8,20 @@
  * Error behavior: returns booleans/null for expected failures; throws on unexpected IO errors.
  */
 export {
+  __resetAnalysisRuntimeForTests,
+  attemptStderrLogPath,
+  attemptStdoutLogPath,
+  buildRunArtifacts,
+  createRunId,
   tryAcquireSlot,
   decrementRunning,
+  hasAnalysisArtifacts,
+  reconcileLatestRun,
   readStatus,
   isProcessAlive,
   isValidVideoId,
+  runAttemptDir,
+  runAttemptMetadataPath,
   spawnAnalysis,
   insightDir,
   insightsBaseDir,
@@ -26,8 +35,12 @@ export {
   stdoutLogPath,
   stderrLogPath,
   readRunMetadata,
+  writeRunLifecycle,
+  type CompatibilityStatus,
   type StatusFile,
   type AnalysisMeta,
   type RunFile,
+  type RunArtifacts,
+  type RunLifecycle,
   type AnalysisProvider,
 } from "@/lib/analysis";
