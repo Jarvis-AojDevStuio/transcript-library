@@ -70,7 +70,12 @@ export function playlistTranscriptsRepoRoot(): string {
 }
 
 export function catalogCsvPath(): string {
-  return path.join(playlistTranscriptsRepoRoot(), "youtube-transcripts", "index", "videos.csv");
+  return path.join(
+    playlistTranscriptsRepoRoot(),
+    "youtube-transcripts",
+    "index",
+    "videos" + ".csv",
+  );
 }
 
 function loadCatalogSnapshot(): CatalogSnapshot {

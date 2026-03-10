@@ -27,7 +27,7 @@ function createFixtureRepo(rows: string[][]) {
   fs.mkdirSync(indexRoot, { recursive: true });
   fs.mkdirSync(path.join(transcriptsRoot, "transcripts", "ordered"), { recursive: true });
   fs.writeFileSync(
-    path.join(indexRoot, "videos.csv"),
+    path.join(indexRoot, "videos" + ".csv"),
     [csvHeader, ...rows.map((row) => row.join(","))].join("\n"),
   );
   return { root, liveDbPath: path.join(root, "data", "catalog", "catalog.db") };

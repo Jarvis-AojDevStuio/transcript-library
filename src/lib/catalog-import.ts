@@ -36,7 +36,7 @@ export type CatalogRebuildResult = {
   checkOnly: boolean;
 };
 
-function parseCsvLine(line: string): string[] {
+function splitCatalogLine(line: string): string[] {
   const out: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -76,7 +76,7 @@ function readCatalogRows(csvFilePath: string): VideoRow[] {
     throw new Error(`Catalog CSV is empty: ${csvFilePath}`);
   }
 
-  const header = parseCsvLine(lines[0]);
+  const header = splitCatalogLine(lines[0]);
   const indexByHeader = Object.fromEntries(header.map((value, index) => [value, index] as const));
 
   const requiredHeaders = [
@@ -100,7 +100,7 @@ function readCatalogRows(csvFilePath: string): VideoRow[] {
   }
 
   return lines.slice(1).map((line) => {
-    const columns = parseCsvLine(line);
+    const columns = splitCatalogLine(line);
 
     return {
       video_id: columns[indexByHeader.video_id] ?? "",

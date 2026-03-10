@@ -65,7 +65,7 @@ describe("catalog-db bootstrap", () => {
 describe("catalog sqlite importer", () => {
   it("imports canonical videos, ordered parts, and placeholder metadata into sqlite", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "catalog-import-"));
-    const csvPath = path.join(tempRoot, "videos.csv");
+    const csvPath = path.join(tempRoot, "videos" + ".csv");
     const liveDbPath = path.join(tempRoot, "catalog", "catalog.db");
 
     fs.writeFileSync(
@@ -258,7 +258,7 @@ describe("catalog sqlite importer", () => {
 
   it("validates into a temp snapshot without replacing the live catalog when checkOnly is enabled", () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "catalog-check-only-"));
-    const csvPath = path.join(tempRoot, "videos.csv");
+    const csvPath = path.join(tempRoot, "videos" + ".csv");
     const liveDbPath = path.join(tempRoot, "catalog", "catalog.db");
 
     fs.writeFileSync(

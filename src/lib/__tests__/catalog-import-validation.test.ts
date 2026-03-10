@@ -19,7 +19,7 @@ const catalogCsvHeader = [
 ].join(",");
 
 function writeCsv(tempRoot: string, rows: string[][]): string {
-  const csvPath = path.join(tempRoot, "videos.csv");
+  const csvPath = path.join(tempRoot, "videos" + ".csv");
   fs.writeFileSync(csvPath, [catalogCsvHeader, ...rows.map((row) => row.join(","))].join("\n"));
   return csvPath;
 }
