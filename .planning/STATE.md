@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-10T03:04:22.620Z"
-last_activity: 2026-03-10 — Completed Phase 02 Plan 02 (SQLite catalog query swap)
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-10T03:17:32Z"
+last_activity: 2026-03-10 — Completed Phase 02 Plan 03 (SQLite catalog cutover hardening)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -21,40 +21,41 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** The library must stay fast and trustworthy for private knowledge browsing and analysis, even as the catalog grows and runtime analysis moves onto a hosted Proxmox container.
-**Current focus:** Phase 2 - SQLite Catalog
+**Current focus:** Phase 3 - Durable Runtime
 
 ## Current Position
 
-Phase: 2 of 4 (SQLite Catalog)
-Plan: 2 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-03-10 — Completed Phase 02 Plan 02 (SQLite catalog query swap)
+Phase: 3 of 4 (Durable Runtime)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-03-10 — Completed Phase 02 Plan 03 (SQLite catalog cutover hardening)
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 6
 - Average duration: 9 min
-- Total execution time: 46 min
+- Total execution time: 55 min
 
 **By Phase:**
 
 | Phase                   | Plans | Total  | Avg/Plan |
 | ----------------------- | ----- | ------ | -------- |
 | 01-artifact-foundations | 3     | 34 min | 11 min   |
-| 02-sqlite-catalog       | 2     | 12 min | 6 min    |
+| 02-sqlite-catalog       | 3     | 21 min | 7 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 4 min, 8 min, 20 min, 7 min, 5 min
+- Last 5 plans: 8 min, 20 min, 7 min, 5 min, 9 min
 - Trend: Stable
   | Phase 01-artifact-foundations P02 | 8 min | 3 tasks | 12 files |
   | Phase 01-artifact-foundations P03 | 20 min | 3 tasks | 20 files |
   | Phase 02-sqlite-catalog P01 | 7 min | 3 tasks | 9 files |
   | Phase 02-sqlite-catalog P02 | 5 min | 3 tasks | 19 files |
+  | Phase 02-sqlite-catalog P03 | 9 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 02-sqlite-catalog]: Cache the catalog facade against the SQLite file mtime so repeated reads stay cheap without reintroducing CSV parsing.
 - [Phase 02-sqlite-catalog]: Keep browse pages server-rendered on demand so builds do not require a local catalog snapshot to exist ahead of time.
 - [Phase 02-sqlite-catalog]: Use a local better-sqlite3 type shim plus TypeScript config support for .ts imports instead of widening scope into dependency changes mid-phase.
+- [Phase 02-sqlite-catalog]: Persist last-import-validation.json beside the live catalog so operators and runtime cache invalidation share one catalog version signal.
+- [Phase 02-sqlite-catalog]: Normalize blank single-part chunk metadata and duplicate chunk copies from the transcript index deterministically during import instead of breaking the last-known-good catalog.
+- [Phase 02-sqlite-catalog]: Refresh SQLite before sync-hook and nightly analysis workflows consume browse metadata so automation and runtime use the same catalog authority.
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-10T03:04:22.618Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-10T03:17:09.898Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

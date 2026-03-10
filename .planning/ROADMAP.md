@@ -12,7 +12,7 @@ This roadmap hardens the existing private transcript library without changing it
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Artifact Foundations** - Make artifact storage deployment-safe and establish the structured analysis contract
-- [ ] **Phase 2: SQLite Catalog** - Replace CSV-backed catalog reads with indexed SQLite queries for faster browsing
+- [x] **Phase 2: SQLite Catalog** - Replace CSV-backed catalog reads with indexed SQLite queries for faster browsing
 - [ ] **Phase 3: Durable Runtime** - Replace fragile analysis lifecycle behavior with durable job and sync state
 - [ ] **Phase 4: Hosted Hardening** - Tighten private deployment boundaries, scale-readiness, and final hosted validation
 
@@ -54,7 +54,7 @@ Plans:
 
 - [x] 02-01: Design SQLite schema and import path for catalog metadata
 - [x] 02-02: Swap home, channel, and video metadata reads to SQLite-backed repositories
-- [ ] 02-03: Add parity checks, validation, and caching/revalidation for hot catalog paths
+- [x] 02-03: Add parity checks, validation, and caching/revalidation for hot catalog paths
 
 ### Phase 3: Durable Runtime
 
@@ -100,6 +100,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase                   | Plans Complete | Status      | Completed  |
 | ----------------------- | -------------- | ----------- | ---------- |
 | 1. Artifact Foundations | 3/3            | Complete    | 2026-03-09 |
-| 2. SQLite Catalog       | 2/3            | In Progress | -          |
+| 2. SQLite Catalog       | 3/3            | Complete    | 2026-03-10 |
 | 3. Durable Runtime      | 0/3            | Not started | -          |
 | 4. Hosted Hardening     | 0/2            | Not started | -          |

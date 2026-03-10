@@ -44,7 +44,7 @@
 - [x] **PERF-01**: Hot request paths reduce unnecessary synchronous filesystem work so common private browsing stays fast under hosted use
 - [ ] **PERF-02**: Page generation and read strategies remain practical as the library approaches roughly 1000 videos
 - [ ] **PERF-03**: Live status/log streaming avoids unbounded polling or connection behavior that degrades noticeably as concurrent viewers increase
-- [ ] **PERF-04**: The app uses caching or revalidation strategies where appropriate to improve repeated catalog-backed reads without compromising correctness
+- [x] **PERF-04**: The app uses caching or revalidation strategies where appropriate to improve repeated catalog-backed reads without compromising correctness
 
 ### Verification
 
@@ -99,7 +99,7 @@
 | PERF-01     | Phase 2 | Complete |
 | PERF-02     | Phase 4 | Pending  |
 | PERF-03     | Phase 3 | Pending  |
-| PERF-04     | Phase 2 | Pending  |
+| PERF-04     | Phase 2 | Complete |
 | TEST-01     | Phase 1 | Complete |
 | TEST-02     | Phase 1 | Complete |
 | TEST-03     | Phase 2 | Complete |
