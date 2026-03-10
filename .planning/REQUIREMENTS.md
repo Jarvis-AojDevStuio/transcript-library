@@ -21,8 +21,8 @@
 ### Catalog And Query Performance
 
 - [x] **CAT-01**: Catalog metadata is stored in SQLite instead of requiring synchronous `videos.csv` parsing on hot request paths
-- [ ] **CAT-02**: Home and channel pages load their catalog data through indexed queries that scale cleanly to at least the project’s near-term catalog size
-- [ ] **CAT-03**: Video lookup by `videoId`, channel grouping, and transcript-part ordering remain correct after the catalog migration
+- [x] **CAT-02**: Home and channel pages load their catalog data through indexed queries that scale cleanly to at least the project’s near-term catalog size
+- [x] **CAT-03**: Video lookup by `videoId`, channel grouping, and transcript-part ordering remain correct after the catalog migration
 - [x] **CAT-04**: Catalog migration includes validation or parity checks that catch differences between the old CSV behavior and the new SQLite-backed behavior before the old path is removed
 
 ### Runtime Durability And Observability
@@ -41,7 +41,7 @@
 
 ### Performance And Scale Hygiene
 
-- [ ] **PERF-01**: Hot request paths reduce unnecessary synchronous filesystem work so common private browsing stays fast under hosted use
+- [x] **PERF-01**: Hot request paths reduce unnecessary synchronous filesystem work so common private browsing stays fast under hosted use
 - [ ] **PERF-02**: Page generation and read strategies remain practical as the library approaches roughly 1000 videos
 - [ ] **PERF-03**: Live status/log streaming avoids unbounded polling or connection behavior that degrades noticeably as concurrent viewers increase
 - [ ] **PERF-04**: The app uses caching or revalidation strategies where appropriate to improve repeated catalog-backed reads without compromising correctness
@@ -85,8 +85,8 @@
 | ANLY-03     | Phase 1 | Complete |
 | ANLY-04     | Phase 1 | Complete |
 | CAT-01      | Phase 2 | Complete |
-| CAT-02      | Phase 2 | Pending  |
-| CAT-03      | Phase 2 | Pending  |
+| CAT-02      | Phase 2 | Complete |
+| CAT-03      | Phase 2 | Complete |
 | CAT-04      | Phase 2 | Complete |
 | RUN-01      | Phase 3 | Pending  |
 | RUN-02      | Phase 3 | Pending  |
@@ -96,7 +96,7 @@
 | SAFE-02     | Phase 3 | Pending  |
 | SAFE-03     | Phase 1 | Complete |
 | SAFE-04     | Phase 2 | Complete |
-| PERF-01     | Phase 2 | Pending  |
+| PERF-01     | Phase 2 | Complete |
 | PERF-02     | Phase 4 | Pending  |
 | PERF-03     | Phase 3 | Pending  |
 | PERF-04     | Phase 2 | Pending  |
