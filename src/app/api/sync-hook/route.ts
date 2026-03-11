@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import fs from "node:fs";
-import { groupVideos, absTranscriptPath } from "@/modules/catalog";
-import { rebuildCatalogFromCsv } from "@/lib/catalog-import";
-import { readStatus, isProcessAlive, analysisPath, spawnAnalysis } from "@/modules/analysis";
+import { submitRuntimeBatch, type BatchRequestMetadata } from "@/lib/runtime-batches";
 
 export const runtime = "nodejs";
 
@@ -26,6 +23,51 @@ function validateBearerToken(req: Request, expectedToken: string): boolean {
   return crypto.timingSafeEqual(provided, expected);
 }
 
+function extractRequestIdentity(req: Request, bodyText: string): BatchRequestMetadata {
+  const idempotencyKey =
+    req.headers.get("idempotency-key") ??
+    req.headers.get("x-sync-request-id") ??
+    req.headers.get("x-github-delivery") ??
+    req.headers.get("x-delivery-id");
+  const receivedAt = new Date().toISOString();
+
+  if (idempotencyKey) {
+    return {
+      requestKey: `sync-hook:${idempotencyKey}`,
+      receivedAt,
+      idempotencyKey,
+      method: "POST",
+      path: "/api/sync-hook",
+      remoteAddress: req.headers.get("x-forwarded-for"),
+      userAgent: req.headers.get("user-agent"),
+    };
+  }
+
+  const fingerprint = crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify({
+        method: "POST",
+        path: "/api/sync-hook",
+        bodyText,
+        userAgent: req.headers.get("user-agent") ?? "",
+        forwardedFor: req.headers.get("x-forwarded-for") ?? "",
+        bucket: Math.floor(Date.now() / (10 * 60 * 1000)),
+      }),
+    )
+    .digest("hex")
+    .slice(0, 24);
+
+  return {
+    requestKey: `sync-hook:fingerprint:${fingerprint}`,
+    receivedAt,
+    method: "POST",
+    path: "/api/sync-hook",
+    remoteAddress: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
+  };
+}
+
 /**
  * POST /api/sync-hook
  * Webhook handler that triggers a batch analysis pass for all videos that do not
@@ -46,65 +88,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // Process asynchronously — return immediately so curl --max-time 10 doesn't timeout
-  (async () => {
-    const refresh = rebuildCatalogFromCsv();
-    console.log("[sync-hook] Refreshed catalog", {
-      catalogVersion: refresh.catalogVersion,
-      videoCount: refresh.videoCount,
-      partCount: refresh.partCount,
-    });
-
-    for (const video of groupVideos().values()) {
-      const videoId = video.videoId;
-
-      // Skip if analysis already exists
-      try {
-        fs.accessSync(analysisPath(videoId));
-        continue;
-      } catch {
-        // No analysis.md — proceed
-      }
-
-      // Skip if already running with alive PID
-      const status = readStatus(videoId);
-      if (status?.status === "running" && isProcessAlive(status.pid)) {
-        continue;
-      }
-
-      // Build transcript
-      const transcriptParts = video.parts.map((p) => {
-        const abs = absTranscriptPath(p.filePath);
-        try {
-          return fs.readFileSync(abs, "utf8");
-        } catch {
-          return `[Part ${p.chunk}: file not found]`;
-        }
-      });
-      const transcript = transcriptParts.join("\n\n---\n\n");
-
-      const spawned = spawnAnalysis(
-        videoId,
-        {
-          videoId,
-          title: video.title,
-          channel: video.channel,
-          topic: video.topic,
-          publishedDate: video.publishedDate,
-          transcriptPartPath: absTranscriptPath(video.parts[0]?.filePath ?? ""),
-        },
-        transcript,
-        "[sync-hook]",
-      );
-
-      if (!spawned) {
-        console.log("[sync-hook] Concurrency cap reached, stopping batch");
-        break;
-      }
-    }
-  })().catch((err) => {
-    console.error("[sync-hook] Batch processing error:", err);
+  const bodyText = await req.text();
+  const request = extractRequestIdentity(req, bodyText);
+  const submission = submitRuntimeBatch({
+    source: "sync-hook",
+    request,
+    logPrefix: "[sync-hook]",
   });
 
-  return NextResponse.json({ ok: true, message: "analysis triggered" });
+  console.log("[sync-hook] Batch submission", {
+    outcome: submission.outcome,
+    batchId: submission.batch.batchId,
+    counts: submission.batch.counts,
+    requestKey: submission.batch.request?.requestKey,
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      outcome: submission.outcome,
+      batch: submission.batch,
+      itemCount: submission.items.length,
+      counts: submission.batch.counts,
+      request: submission.batch.request ?? null,
+    },
+    { status: submission.outcome === "created" ? 202 : 200 },
+  );
 }

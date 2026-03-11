@@ -143,6 +143,16 @@ export type AnalyzeStartEligibility = {
   message: string;
 };
 
+export type StartAnalysisOutcome = "started" | "capacity-reached" | "failed-to-start";
+
+export type StartAnalysisResult = {
+  started: boolean;
+  outcome: StartAnalysisOutcome;
+  runId?: string;
+  snapshot: RuntimeSnapshot;
+  message: string;
+};
+
 type ProviderSpec = {
   provider: AnalysisProvider;
   command: string;
@@ -750,13 +760,20 @@ export function __resetAnalysisRuntimeForTests(): void {
   globalThis.__analysisRunningCount = 0;
 }
 
-export function spawnAnalysis(
+export function startAnalysis(
   videoId: string,
   meta: AnalysisMeta,
   transcript: string,
   logPrefix = "[analyze]",
-): boolean {
-  if (!tryAcquireSlot()) return false;
+): StartAnalysisResult {
+  if (!tryAcquireSlot()) {
+    return {
+      started: false,
+      outcome: "capacity-reached",
+      snapshot: readRuntimeSnapshot(videoId),
+      message: "analysis concurrency cap reached",
+    };
+  }
 
   const runId = createRunId();
   const promptResolvedAt = nowIso();
@@ -784,7 +801,13 @@ export function spawnAnalysis(
       error: `prompt setup error: ${(err as Error).message}`,
       artifacts: buildRunArtifacts(videoId, meta.title, runId),
     });
-    return false;
+    return {
+      started: false,
+      outcome: "failed-to-start",
+      runId,
+      snapshot: readRuntimeSnapshot(videoId),
+      message: `prompt setup error: ${(err as Error).message}`,
+    };
   }
 
   initializeArtifacts(videoId, runId, resolvedMeta);
@@ -821,7 +844,13 @@ export function spawnAnalysis(
       error: `spawn error: ${(err as Error).message}`,
       artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
     });
-    return false;
+    return {
+      started: false,
+      outcome: "failed-to-start",
+      runId,
+      snapshot: readRuntimeSnapshot(videoId),
+      message: `spawn error: ${(err as Error).message}`,
+    };
   }
 
   if (child.pid === undefined) {
@@ -841,7 +870,13 @@ export function spawnAnalysis(
       error: `spawn failed: ${provider.command} not found`,
       artifacts: buildRunArtifacts(videoId, resolvedMeta.title, runId),
     });
-    return false;
+    return {
+      started: false,
+      outcome: "failed-to-start",
+      runId,
+      snapshot: readRuntimeSnapshot(videoId),
+      message: `spawn failed: ${provider.command} not found`,
+    };
   }
 
   const pid = child.pid;
@@ -1025,5 +1060,20 @@ export function spawnAnalysis(
     });
   });
 
-  return true;
+  return {
+    started: true,
+    outcome: "started",
+    runId,
+    snapshot: readRuntimeSnapshot(videoId),
+    message: "analysis started",
+  };
+}
+
+export function spawnAnalysis(
+  videoId: string,
+  meta: AnalysisMeta,
+  transcript: string,
+  logPrefix = "[analyze]",
+): boolean {
+  return startAnalysis(videoId, meta, transcript, logPrefix).started;
 }
