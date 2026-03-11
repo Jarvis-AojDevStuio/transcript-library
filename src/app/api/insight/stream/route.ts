@@ -1,38 +1,14 @@
 import { NextResponse } from "next/server";
-import { isValidVideoId, readRuntimeSnapshot } from "@/modules/analysis";
-import { getInsightArtifacts, readInsightLogTail } from "@/modules/insights";
+import { isValidVideoId } from "@/modules/analysis";
+import { readRuntimeStreamEvent } from "@/lib/runtime-stream";
 
 export const runtime = "nodejs";
 
 /**
- * Builds the SSE data payload for a given video's current analysis state.
- * Promotes a stale "running" status to "failed" when the recorded PID is no
- * longer alive.
- *
- * @param videoId - The video identifier to read state for.
- * @returns An object with `status`, `startedAt`, `completedAt`, `error`, `logs`,
- *   `artifacts`, and `run` fields.
- */
-function toPayload(videoId: string) {
-  const snapshot = readRuntimeSnapshot(videoId);
-  const logs = readInsightLogTail(videoId);
-
-  return {
-    status: snapshot.status,
-    lifecycle: snapshot.lifecycle,
-    startedAt: snapshot.startedAt,
-    completedAt: snapshot.completedAt,
-    error: snapshot.error,
-    logs,
-    artifacts: getInsightArtifacts(videoId),
-    run: snapshot.run,
-  };
-}
-
-/**
  * GET /api/insight/stream
- * Opens a Server-Sent Events stream that pushes the analysis payload every 2 s.
- * The stream closes automatically when the client disconnects.
+ * Opens a Server-Sent Events stream that pushes status-first runtime snapshots
+ * backed by a shared per-video cache. Concurrent viewers reuse the same
+ * snapshot payload and receive heartbeat frames when nothing changed.
  *
  * @param req - Incoming request. Expects `?videoId=` query param.
  * @returns An SSE `text/event-stream` response, or a 400 JSON error if the
@@ -49,8 +25,11 @@ export async function GET(req: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
+      let lastVersion: string | undefined;
       const send = () => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(toPayload(videoId))}\n\n`));
+        const event = readRuntimeStreamEvent(videoId, lastVersion);
+        lastVersion = event.version;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
 
       send();
