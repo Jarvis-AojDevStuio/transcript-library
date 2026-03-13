@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-03-10T03:15:52.041Z",
+  "generatedAt": "2026-03-13T00:54:30.874Z",
   "csvPath": "/Users/ossieirondi/Projects/desktop-commander/repos/playlist-transcripts/youtube-transcripts/index/videos.csv",
   "liveDbPath": "/Users/ossieirondi/Projects/transcript-library/data/catalog/catalog.db",
-  "tempDbPath": "/Users/ossieirondi/Projects/transcript-library/data/catalog/catalog.db.tmp-e4febf01e63e",
+  "tempDbPath": "/Users/ossieirondi/Projects/transcript-library/data/catalog/catalog.db.tmp-9d6b105b877f",
   "validationReportPath": "/Users/ossieirondi/Projects/transcript-library/data/catalog/last-import-validation.json",
-  "catalogVersion": "bf535ad425f4bf68b59deef6c0d2c8fe2321ae2eddbb1e38a6795dd420e81fcc",
-  "checkOnly": true,
+  "catalogVersion": "201c12bb2e86e430100653729d6d3aa6a35c12f178124ce5f9daeecb14929bf0",
+  "checkOnly": false,
   "valid": true,
   "summary": {
     "videoCount": 140,

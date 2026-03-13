@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "videoId": "f8cfH5XX-XU",
+  "runId": "legacy-20260308205248",
+  "status": "mismatch",
+  "resolution": "rerun-ready",
+  "retryable": true,
+  "checkedAt": "2026-03-13T01:45:30.395Z",
+  "detectedAt": "2026-03-13T01:45:30.389Z",
+  "resolvedAt": null,
+  "reasons": [
+    {
+      "code": "missing-structured-analysis",
+      "severity": "failure",
+      "message": "The latest run completed but analysis.json is missing."
+    }
+  ],
+  "artifactState": {
+    "canonicalAnalysis": true,
+    "structuredAnalysis": "missing",
+    "statusFile": true,
+    "runFile": true
+  },
+  "evidence": {
+    "stdoutTail": "ce as a hedge** — the author frames Pi not as a Claude Code replacement but as an insurance policy: when a proprietary tool changes in ways you dislike, you need an alternative you fully control.\n\n### Tools / Repos / Resources Mentioned\n\n- **`pi`** — the Pi coding agent CLI; invoked directly from the terminal with `-e` flags to load extensions.\n- **`pi-vs-claude-code` repo** — `https://github.com/disler/pi-vs-claude-code` — companion codebase containing all 14 Pi versions demonstrated in the video, with extensions in the `extensions/` directory.\n- **`pi.dev`** — the Pi agent homepage.\n- **Playwright CLI** — used as a browser automation skill inside Pi's `system-select` agent; invoked via a bash skill rather than MCP.\n- **`claude` CLI** — referenced as the default model driver for Pi (Claude Sonnet 4.6 with thinking enabled in the demo).\n- **Haiku model** — used deliberately as a \"dumb\" model to demonstrate that harness control can compensate for weaker model intelligence.\n- **Gemini 3 Flash** — used in the agent-team demo as an alternative model to illustrate Pi's model-agnostic design.\n- **GLM-5, Minmax 2.5** — mentioned as additional models Pi can target without reconfiguration.\n- **`just` (Justfile runner)** — implied by the project's command interface (consistent with the repo's tooling conventions).\n- **Tactical Agentic Coding course** — `agenticengineer.com/tactical-agentic-coding` — referenced as the venue for deeper ADW (AI Developer Workflow) content.\n\n### Who This Is For\n\n- **Mid-to-senior engineers** who have already mastered Claude Code's defaults and want to operate at the agent-harness level rather than the prompt level.\n- **Engineers building outloop agentic workflows** — products, pipelines, or automation that must run without babysitting a terminal, requiring programmatic control over the agent loop.\n- **Developers who need model flexibility** — teams that want to route tasks to cheaper models (Haiku, Flash) for cost control or switch providers without rebuilding their tooling.\n- **Researchers and experimenters** building specialized agent teams, pipelines, or meta-agents who need precise hook access and lifecycle observability that closed-source tools don't expose.\n- **Engineers concerned about vendor lock-in** — anyone who wants to pin a stable version of their agentic tool and be immune to breaking changes pushed by a for-profit platform.\n\n### Risks, Gaps, or Caveats\n\n- **No enterprise support** — Pi is a one-person open-source project; it lacks the stability guarantees, managed updates, and team-collaboration features required for large organizations.\n- **Everything must be built from scratch** — native sub-agents, task lists, damage control, and agent pipelines are all absent by default; the customizability that makes Pi powerful also means significant upfront engineering investment.\n- **No MCP support** — Pi does not implement the Model Context Protocol; tool integrations must be built as bash-invoked scripts or CLI wrappers rather than using the MCP ecosystem.\n- **YOLO mode is a real risk** — running with full device access and no confirmation gates is appropriate for experienced engineers but dangerous for anyone who doesn't fully understand what their agent is executing.\n- **Transcript quality** — the transcript is auto-generated and contains several transcription artifacts (e.g., \"claw code\" for \"Claude Code\", \"aent\" for \"agent\", \"Asian\" for \"agentic\"); technical claims are preserved accurately but some phrasing required inference.\n- **Demo-driven, not benchmarked** — the video shows impressive live demos but provides no quantitative comparison of output quality, cost, or task completion rates between Pi and Claude Code configurations.\n- **Extension ecosystem is nascent** — there is no plugin registry or community library for Pi extensions; every team starts from scratch, which limits discoverability and reuse compared to Claude Code's growing ecosystem.\n",
+    "stderrTail": ""
+  }
+}

@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "87a67f89",
+    "label": "transcript-library dev server",
+    "command": "just start",
+    "cwd": "/Users/ossieirondi/Projects/transcript-library",
+    "startedAt": 1773363210688,
+    "processType": "server",
+    "group": "transcript-library",
+    "readyPattern": null,
+    "readyPort": 3000,
+    "pid": 81769
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "videoId": "I1NdVZ6l5CQ",
+  "runId": null,
+  "status": "mismatch",
+  "resolution": "rerun-ready",
+  "retryable": true,
+  "checkedAt": "2026-03-13T01:46:10.202Z",
+  "detectedAt": "2026-03-13T01:46:10.198Z",
+  "resolvedAt": null,
+  "reasons": [
+    {
+      "code": "artifacts-without-run",
+      "severity": "failure",
+      "message": "Canonical artifacts exist without a matching durable run record."
+    }
+  ],
+  "artifactState": {
+    "canonicalAnalysis": true,
+    "structuredAnalysis": "missing",
+    "statusFile": true,
+    "runFile": false
+  },
+  "evidence": {
+    "stdoutTail": "",
+    "stderrTail": ""
+  }
+}

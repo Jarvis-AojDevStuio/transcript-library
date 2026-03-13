@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "videoId": "RpUTF_U4kiw",
+  "runId": "20260313005524546-727005",
+  "provider": "claude-cli",
+  "command": "claude",
+  "args": ["--dangerously-skip-permissions", "-p"],
+  "lifecycle": "failed",
+  "startedAt": "2026-03-13T00:55:26.127Z",
+  "promptResolvedAt": "2026-03-13T00:55:24.546Z",
+  "pid": 82208,
+  "completedAt": "2026-03-13T00:55:42.908Z",
+  "exitCode": 1,
+  "error": "exit code 1",
+  "artifacts": {
+    "structuredFileName": "analysis.json",
+    "canonicalFileName": "analysis.md",
+    "displayFileName": "claude-code-multi-agent-orchestration-with-opus-4-6-tmux-and-agent-sandboxes.md",
+    "metadataFileName": "video-metadata.json",
+    "stdoutFileName": "worker-stdout.txt",
+    "stderrFileName": "worker-stderr.txt",
+    "attemptDirectory": "runs/20260313005524546-727005",
+    "attemptRunFileName": "run.json",
+    "attemptStdoutFileName": "worker-stdout.txt",
+    "attemptStderrFileName": "worker-stderr.txt"
+  },
+  "status": "failed"
+}
