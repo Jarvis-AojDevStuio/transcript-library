@@ -25,6 +25,7 @@ This slice is final assembly, not subsystem invention. The main risk is a false 
 
 - `npx vitest run src/lib/__tests__/hosted-launch-proof.test.ts`
 - `node --import tsx scripts/verify-s07-hosted-launch.ts`
+- `node --import tsx scripts/verify-s07-hosted-launch.ts` (Ensure it produces a structured status surface with explicit failing checks when simulated failures are injected)
 - `rg -n "verify-s07-hosted-launch|Cloudflare Access|OTP|browser proof|machine-only|evidence bundle|S07-UAT" docs/operations/hosted-launch-proof.md .gsd/milestones/M002/slices/S07/S07-UAT.md docs/operations/source-repo-sync-contract.md docs/plans/2026-03-09-self-hosted-proxmox-deployment.md`
 - Complete `docs/operations/hosted-launch-proof.md` once against the live environment and record the result in `.gsd/milestones/M002/slices/S07/S07-UAT.md`, including hostname, timestamp, selected `videoId`, evidence-bundle path, and browser/UAT outcome.
 
