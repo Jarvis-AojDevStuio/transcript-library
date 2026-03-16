@@ -231,6 +231,9 @@ Clone transcript data into:
 - `/srv/transcript-library/playlist-transcripts`
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> gsd/M002/S04
 For unattended operation, schedule the daily sweep rather than a bare `git pull` cron:
 
 ```bash
@@ -239,6 +242,7 @@ node --import tsx scripts/daily-operational-sweep.ts
 ```
 
 That unattended command runs the app-owned refresh contract first, then the conservative repair pass, and writes durable operator evidence. If you need refresh without the repair layer, use the narrower refresh entrypoints:
+<<<<<<< HEAD
 
 ```bash
 cd /opt/transcript-library/current
@@ -248,6 +252,8 @@ node --import tsx scripts/refresh-source-catalog.ts
 or, for machine callers:
 =======
 Then refresh through the app-owned refresh contract, not a bare `git pull` cron. Supported entrypoints:
+=======
+>>>>>>> gsd/M002/S04
 
 ```bash
 cd /opt/transcript-library/current
@@ -263,6 +269,7 @@ Authorization: Bearer <SYNC_TOKEN>
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 Topology note:
 
 - Do **not** model `library.aojdevstudio.me` as a generic bearer-auth hostname.
@@ -275,10 +282,14 @@ That contract fast-forwards the local checkout, rebuilds SQLite, and writes dura
 
 Inspect after each refresh with:
 >>>>>>> gsd/M002/S03
+=======
+Inspect after each unattended sweep with:
+>>>>>>> gsd/M002/S04
 
 ```bash
 cat /srv/transcript-library/catalog/last-source-refresh.json
 cat /srv/transcript-library/catalog/last-import-validation.json
+<<<<<<< HEAD
 <<<<<<< HEAD
 cat /srv/transcript-library/runtime/daily-operational-sweep/latest.json
 ```
@@ -287,12 +298,19 @@ Those files live next to `CATALOG_DB_PATH` or `INSIGHTS_BASE_DIR`, so keep the c
 
 If the sweep artifact reports `manualFollowUpVideoIds`, those are rerun-only videos that need explicit operator follow-up. This is deliberately refresh-only at the ingest boundary: new videos become browsable after refresh, while analysis remains on-demand or part of an explicit workflow.
 =======
+=======
+cat /srv/transcript-library/runtime/daily-operational-sweep/latest.json
+>>>>>>> gsd/M002/S04
 ```
 
-Those files live next to `CATALOG_DB_PATH`, so keep the catalog on shared storage rather than inside the release tree.
+Those files live next to `CATALOG_DB_PATH` or `INSIGHTS_BASE_DIR`, so keep the catalog and runtime storage on shared storage rather than inside the release tree.
 
+<<<<<<< HEAD
 This is deliberately refresh-only: new videos become browsable after refresh, but analysis remains on-demand.
 >>>>>>> gsd/M002/S03
+=======
+If the sweep artifact reports `manualFollowUpVideoIds`, those are rerun-only videos that need explicit operator follow-up. This is deliberately refresh-only at the ingest boundary: new videos become browsable after refresh, while analysis remains on-demand or part of an explicit workflow.
+>>>>>>> gsd/M002/S04
 
 ### 8. Process Management
 
@@ -368,10 +386,14 @@ Important note:
 18. Start pm2 app from `/opt/transcript-library/current`
 19. Verify app on `http://localhost:3000`
 <<<<<<< HEAD
+<<<<<<< HEAD
 20. Run `node --import tsx scripts/daily-operational-sweep.ts` from the current release and confirm `last-source-refresh.json`, `last-import-validation.json`, and `runtime/daily-operational-sweep/latest.json` exist where the hosted runtime expects them
 =======
 20. Run `node --import tsx scripts/refresh-source-catalog.ts --check` from the current release and confirm `last-source-refresh.json` plus `last-import-validation.json` exist where the hosted runtime expects them
 >>>>>>> gsd/M002/S03
+=======
+20. Run `node --import tsx scripts/daily-operational-sweep.ts` from the current release and confirm `last-source-refresh.json`, `last-import-validation.json`, and `runtime/daily-operational-sweep/latest.json` exist where the hosted runtime expects them
+>>>>>>> gsd/M002/S04
 
 ### Phase 4 - Tunnel and Access
 
@@ -404,12 +426,16 @@ Important note:
 
 31. Add pm2 log rotation
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> gsd/M002/S04
 32. Add a daily sweep cron or systemd timer that runs `node --import tsx scripts/daily-operational-sweep.ts`
 33. After each unattended run, inspect `/srv/transcript-library/runtime/daily-operational-sweep/latest.json` and confirm whether `manualFollowUpVideoIds` is empty or names rerun-only videos that need explicit operator follow-up
 34. Test `POST /api/sync-hook` with `SYNC_TOKEN`
 35. Test LXC reboot
 36. Test rollback to previous release
 37. Snapshot the LXC
+<<<<<<< HEAD
 =======
 32. Add a refresh-only cron or systemd timer that runs `node --import tsx scripts/refresh-source-catalog.ts`
 33. Test `POST /api/sync-hook` with `SYNC_TOKEN`
@@ -417,6 +443,8 @@ Important note:
 35. Test rollback to previous release
 36. Snapshot the LXC
 >>>>>>> gsd/M002/S03
+=======
+>>>>>>> gsd/M002/S04
 
 ## Pre-Deploy Code Changes
 
@@ -446,6 +474,9 @@ Important note:
 ## Risks and Mitigations
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> gsd/M002/S04
 | Risk                           | Mitigation                                                                                                                                                                                                                        |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Production repo becomes dirty  | Never run production from a mutable git worktree                                                                                                                                                                                  |
@@ -457,6 +488,7 @@ Important note:
 | Webhook abuse                  | HMAC verification, dedicated deploy hostname                                                                                                                                                                                      |
 | Access blocks webhook          | Keep deploy hostname outside OTP Access app                                                                                                                                                                                       |
 | Rollback is painful            | Keep previous release directory and repoint symlink                                                                                                                                                                               |
+<<<<<<< HEAD
 =======
 | Risk                           | Mitigation                                                                                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -469,6 +501,8 @@ Important note:
 | Access blocks webhook          | Keep deploy hostname outside OTP Access app                                                                                                 |
 | Rollback is painful            | Keep previous release directory and repoint symlink                                                                                         |
 >>>>>>> gsd/M002/S03
+=======
+>>>>>>> gsd/M002/S04
 
 ## Cost
 

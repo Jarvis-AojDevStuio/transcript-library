@@ -273,6 +273,9 @@ GET  /api/raw?path=...                Serve raw transcript chunks
 
 ```bash
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> gsd/M002/S04
 just start              # Dev server
 just prod-start         # Production
 just build              # Next.js build
@@ -280,6 +283,7 @@ just lint               # ESLint
 just typecheck          # tsc --noEmit
 just daily-sweep        # Unattended daily sweep: refresh-only ingest + safe repair, no analysis launch
 just backfill-insights  # Explicit analysis workflow for existing videos
+<<<<<<< HEAD
 =======
 just start            # Dev server
 just prod-start       # Production
@@ -288,6 +292,8 @@ just lint             # ESLint
 just typecheck        # tsc --noEmit
 just backfill-insights  # Re-run analysis for existing videos
 >>>>>>> gsd/M002/S01
+=======
+>>>>>>> gsd/M002/S04
 npx tsx scripts/rebuild-catalog.ts --check  # Validate catalog parity without cutover
 npx tsx scripts/benchmark-hosted-scale.ts --check  # Scale validation (1000-video benchmark)
 ```

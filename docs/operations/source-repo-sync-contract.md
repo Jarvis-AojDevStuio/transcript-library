@@ -8,6 +8,7 @@ This document defines the supported boundary between the upstream `playlist-tran
 - **Transcript Library owns refreshing its local checkout.** It fast-forwards the local `PLAYLIST_TRANSCRIPTS_REPO` checkout, rebuilds SQLite from that checkout, and records refresh evidence beside the catalog.
 - **Refresh is refresh-only.** It updates source state and browse state; it does **not** start analysis work.
 <<<<<<< HEAD
+<<<<<<< HEAD
 - **The unattended default is the daily operational sweep.** Operators schedule `node --import tsx scripts/daily-operational-sweep.ts`, which runs the supported refresh authority first and then only the conservative historical repair pass.
 - **Analysis remains on-demand.** Users start it from `/api/analyze`, or operators trigger it through explicit analysis workflows when they intentionally want analysis work.
 
@@ -17,6 +18,12 @@ If you need new browse content to appear automatically, use the refresh entrypoi
 
 If you need new browse content to appear automatically, use the refresh entrypoints below. If you need AI artifacts for a video, run an analysis workflow separately.
 >>>>>>> gsd/M002/S03
+=======
+- **The unattended default is the daily operational sweep.** Operators schedule `node --import tsx scripts/daily-operational-sweep.ts`, which runs the supported refresh authority first and then only the conservative historical repair pass.
+- **Analysis remains on-demand.** Users start it from `/api/analyze`, or operators trigger it through explicit analysis workflows when they intentionally want analysis work.
+
+If you need new browse content to appear automatically, use the refresh entrypoints below or schedule the daily sweep that wraps refresh plus safe repair. If you need AI artifacts for a video, run an analysis workflow separately.
+>>>>>>> gsd/M002/S04
 
 ## Supported Repository Shape
 
@@ -86,6 +93,7 @@ Behavior:
 - Returns refresh outcomes (`updated`, `noop`, `failed`) instead of analysis batch submission details.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 Important hosted boundary:
 
 - `library.aojdevstudio.me` is the **friend-facing** Cloudflare Access hostname.
@@ -93,6 +101,8 @@ Important hosted boundary:
 - Do **not** assume a bearer token alone is a supported way to reach browser routes on that hostname.
 - `/api/sync-hook` is the supported bearer-based machine entrypoint, not the model for the whole browser surface.
 
+=======
+>>>>>>> gsd/M002/S04
 ## Daily Sweep Layered on Top of Refresh
 
 When operators want one unattended command, schedule:
@@ -114,8 +124,11 @@ If `manualFollowUpVideoIds` is non-empty, those videos need manual follow-up bec
 rerun-only mismatch such as `artifacts-without-run`. That is an intentional stop signal: the sweep
 leaves those videos visible for an explicit rerun and does not fabricate missing run history or auto-start analysis.
 
+<<<<<<< HEAD
 =======
 >>>>>>> gsd/M002/S03
+=======
+>>>>>>> gsd/M002/S04
 ## What Refresh Does **Not** Do
 
 Refresh does **not**:
@@ -249,10 +262,13 @@ Use cron/systemd on the app host to run:
 
 ```bash
 cd /opt/transcript-library/current
-node --import tsx scripts/refresh-source-catalog.ts
+node --import tsx scripts/daily-operational-sweep.ts
 ```
 
-Use this when the app host is the only machine responsible for keeping the local checkout fresh.
+Use this when the app host is responsible for unattended refresh-only ingest plus the conservative
+historical repair pass. Inspect `data/runtime/daily-operational-sweep/latest.json` (or the sibling
+`runtime/` tree next to `INSIGHTS_BASE_DIR`) after each run; if `manualFollowUpVideoIds` is non-empty,
+those rerun-only videos need explicit operator follow-up and analysis remains on-demand.
 
 ### B. Upstream webhook or external caller
 
