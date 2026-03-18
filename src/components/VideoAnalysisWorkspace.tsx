@@ -114,6 +114,26 @@ function SparkleIcon() {
   );
 }
 
+/**
+ * Renders a plain string with basic inline markdown (**bold**) as React nodes.
+ */
+function InlineMarkdown({ children }: { children: string }) {
+  const parts = children.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith("**") && part.endsWith("**") ? (
+          <strong key={i} className="font-semibold text-[var(--ink)]">
+            {part.slice(2, -2)}
+          </strong>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 function FullReportSection({ insight }: { insight: string | null }) {
   const [open, setOpen] = useState(false);
   return (
@@ -341,129 +361,185 @@ export function VideoAnalysisWorkspace({ videoId }: { videoId: string }) {
       ) : null}
 
       {data ? (
-        <section className="rounded-[1.75rem] border border-[var(--line)] bg-white/84 p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
+        status === "running" || status === "failed" || reconciliation?.status === "mismatch" ? (
+          <section className="rounded-[1.75rem] border border-[var(--line)] bg-white/84 p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-3 py-1 text-xs ${stageClassName}`}>
+                    {stage.label}
+                  </span>
+                  {reconciliation?.status === "mismatch" ? (
+                    <span className="rounded-full bg-[#fbe9e7] px-3 py-1 text-xs text-[#7b342f]">
+                      Retry Needed
+                    </span>
+                  ) : null}
+                  {data.analyzeOutcome ? (
+                    <span className="rounded-full bg-[var(--panel)] px-3 py-1 text-xs text-[var(--muted)]">
+                      {data.analyzeOutcome.replaceAll("-", " ")}
+                    </span>
+                  ) : null}
+                </div>
+                <div>
+                  <h3 className="font-display text-lg tracking-[-0.02em] text-[var(--ink)]">
+                    Runtime status
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                    {retryGuidance?.message ??
+                      "Live status reads stay ahead of raw files so operators can tell whether a run is healthy before opening logs."}
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-3 text-sm text-[var(--muted-strong)] sm:grid-cols-2">
+                <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
+                  <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                    Latest run
+                  </div>
+                  <div className="mt-2">
+                    {run?.startedAt ? new Date(run.startedAt).toLocaleString() : "No run recorded"}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
+                  <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                    Retry path
+                  </div>
+                  <div className="mt-2">
+                    {retryGuidance?.canRetry
+                      ? "Use Refresh Analysis for a clean rerun."
+                      : status === "running"
+                        ? "Wait for the current run to finish."
+                        : "No rerun needed right now."}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {reconciliation?.status === "mismatch" ? (
+              <div className="mt-5 rounded-2xl border border-[#d8b1aa] bg-[#fbe9e7] px-5 py-4">
+                <div className="text-sm font-semibold text-[#7b342f]">
+                  The latest runtime artifacts do not reconcile cleanly.
+                </div>
+                <ul className="mt-2 space-y-2 text-sm leading-6 text-[#7b342f]">
+                  {mismatchReasons.map((reason) => (
+                    <li key={`${reason.code}-${reason.message}`}>{reason.message}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {hasRecentEvidence ? (
+              <div className="mt-5 rounded-2xl bg-[var(--panel)] px-5 py-4">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-[var(--ink)]">
+                      Recent runtime evidence
+                    </h4>
+                    <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                      Showing only the latest useful lines by default. Full stdout and stderr stay
+                      secondary.
+                    </p>
+                  </div>
+                  <span className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                    {visibleRecentLogs.length} lines
+                  </span>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {visibleRecentLogs.map((line, index) => (
+                    <div
+                      key={`${index}-${line}`}
+                      className="rounded-xl bg-white px-4 py-3 text-sm leading-6 text-[var(--muted-strong)]"
+                    >
+                      {line}
+                    </div>
+                  ))}
+                </div>
+                {recentLogs.length > visibleRecentLogs.length ? (
+                  <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+                    Older lines are still available in the full worker log disclosure below.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {showFullLogs ? (
+              <details className="mt-5 rounded-2xl border border-[var(--line)] bg-white/82 p-5">
+                <summary className="cursor-pointer list-none text-sm font-medium text-[var(--ink)]">
+                  Full worker logs
+                </summary>
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-3xl bg-[var(--panel)] p-4">
+                    <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                      {artifactMeta?.stdoutFileName ?? "worker-stdout.txt"}
+                    </div>
+                    <pre className="mt-3 overflow-x-auto text-xs leading-6 break-words whitespace-pre-wrap text-[var(--muted-strong)]">
+                      {liveStdout || "No stdout yet."}
+                    </pre>
+                  </div>
+                  <div className="rounded-3xl bg-[var(--panel)] p-4">
+                    <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                      {artifactMeta?.stderrFileName ?? "worker-stderr.txt"}
+                    </div>
+                    <pre className="mt-3 overflow-x-auto text-xs leading-6 break-words whitespace-pre-wrap text-[var(--muted-strong)]">
+                      {liveStderr || "No stderr yet."}
+                    </pre>
+                  </div>
+                </div>
+              </details>
+            ) : null}
+          </section>
+        ) : (
+          <details className="group rounded-[1.75rem] border border-[var(--line)] bg-white/84">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-4 [&::-webkit-details-marker]:hidden">
+              <div className="flex items-center gap-3">
+                <h3 className="font-display text-sm tracking-[-0.02em] text-[var(--muted)]">
+                  Runtime status
+                </h3>
                 <span className={`rounded-full px-3 py-1 text-xs ${stageClassName}`}>
                   {stage.label}
                 </span>
-                {reconciliation?.status === "mismatch" ? (
-                  <span className="rounded-full bg-[#fbe9e7] px-3 py-1 text-xs text-[#7b342f]">
-                    Retry Needed
-                  </span>
-                ) : null}
-                {data.analyzeOutcome ? (
-                  <span className="rounded-full bg-[var(--panel)] px-3 py-1 text-xs text-[var(--muted)]">
-                    {data.analyzeOutcome.replaceAll("-", " ")}
+                {run?.startedAt ? (
+                  <span className="text-xs text-[var(--muted)]">
+                    {new Date(run.startedAt).toLocaleString()}
                   </span>
                 ) : null}
               </div>
-              <div>
-                <h3 className="font-display text-lg tracking-[-0.02em] text-[var(--ink)]">
-                  Runtime status
-                </h3>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                  {retryGuidance?.message ??
-                    "Live status reads stay ahead of raw files so operators can tell whether a run is healthy before opening logs."}
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-3 text-sm text-[var(--muted-strong)] sm:grid-cols-2">
-              <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
-                <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                  Latest run
-                </div>
-                <div className="mt-2">
-                  {run?.startedAt ? new Date(run.startedAt).toLocaleString() : "No run recorded"}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
-                <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                  Retry path
-                </div>
-                <div className="mt-2">
-                  {retryGuidance?.canRetry
-                    ? "Use Refresh Analysis for a clean rerun."
-                    : status === "running"
-                      ? "Wait for the current run to finish."
-                      : "No rerun needed right now."}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {reconciliation?.status === "mismatch" ? (
-            <div className="mt-5 rounded-2xl border border-[#d8b1aa] bg-[#fbe9e7] px-5 py-4">
-              <div className="text-sm font-semibold text-[#7b342f]">
-                The latest runtime artifacts do not reconcile cleanly.
-              </div>
-              <ul className="mt-2 space-y-2 text-sm leading-6 text-[#7b342f]">
-                {mismatchReasons.map((reason) => (
-                  <li key={`${reason.code}-${reason.message}`}>{reason.message}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {hasRecentEvidence ? (
-            <div className="mt-5 rounded-2xl bg-[var(--panel)] px-5 py-4">
-              <div className="flex items-baseline justify-between gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-[var(--ink)]">Recent runtime evidence</h4>
-                  <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                    Showing only the latest useful lines by default. Full stdout and stderr stay
-                    secondary.
-                  </p>
-                </div>
-                <span className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                  {visibleRecentLogs.length} lines
-                </span>
-              </div>
-              <div className="mt-4 space-y-2">
-                {visibleRecentLogs.map((line, index) => (
-                  <div
-                    key={`${index}-${line}`}
-                    className="rounded-xl bg-white px-4 py-3 text-sm leading-6 text-[var(--muted-strong)]"
-                  >
-                    {line}
+              <span className="text-xs text-[var(--muted)] transition group-open:rotate-90">▶</span>
+            </summary>
+            <div className="border-t border-[var(--line)] p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-3">
+                  <div>
+                    <p className="max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                      {retryGuidance?.message ?? "No rerun needed right now."}
+                    </p>
                   </div>
-                ))}
+                </div>
+                <div className="grid gap-3 text-sm text-[var(--muted-strong)] sm:grid-cols-2">
+                  <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
+                    <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                      Latest run
+                    </div>
+                    <div className="mt-2">
+                      {run?.startedAt
+                        ? new Date(run.startedAt).toLocaleString()
+                        : "No run recorded"}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl bg-[var(--panel)] px-4 py-3">
+                    <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                      Retry path
+                    </div>
+                    <div className="mt-2">
+                      {retryGuidance?.canRetry
+                        ? "Use Refresh Analysis for a clean rerun."
+                        : "No rerun needed right now."}
+                    </div>
+                  </div>
+                </div>
               </div>
-              {recentLogs.length > visibleRecentLogs.length ? (
-                <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-                  Older lines are still available in the full worker log disclosure below.
-                </p>
-              ) : null}
             </div>
-          ) : null}
-
-          {showFullLogs ? (
-            <details className="mt-5 rounded-2xl border border-[var(--line)] bg-white/82 p-5">
-              <summary className="cursor-pointer list-none text-sm font-medium text-[var(--ink)]">
-                Full worker logs
-              </summary>
-              <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                <div className="rounded-3xl bg-[var(--panel)] p-4">
-                  <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                    {artifactMeta?.stdoutFileName ?? "worker-stdout.txt"}
-                  </div>
-                  <pre className="mt-3 overflow-x-auto text-xs leading-6 break-words whitespace-pre-wrap text-[var(--muted-strong)]">
-                    {liveStdout || "No stdout yet."}
-                  </pre>
-                </div>
-                <div className="rounded-3xl bg-[var(--panel)] p-4">
-                  <div className="text-[11px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                    {artifactMeta?.stderrFileName ?? "worker-stderr.txt"}
-                  </div>
-                  <pre className="mt-3 overflow-x-auto text-xs leading-6 break-words whitespace-pre-wrap text-[var(--muted-strong)]">
-                    {liveStderr || "No stderr yet."}
-                  </pre>
-                </div>
-              </div>
-            </details>
-          ) : null}
-        </section>
+          </details>
+        )
       ) : null}
 
       {/* Loading state */}
@@ -513,7 +589,7 @@ export function VideoAnalysisWorkspace({ videoId }: { videoId: string }) {
                       0{i + 1}
                     </div>
                     <p className="mt-2 text-[0.9375rem] leading-[1.65] text-[var(--muted-strong)]">
-                      {t}
+                      <InlineMarkdown>{t}</InlineMarkdown>
                     </p>
                   </div>
                 ))}
@@ -542,7 +618,7 @@ export function VideoAnalysisWorkspace({ videoId }: { videoId: string }) {
                       {i + 1}
                     </div>
                     <p className="pt-1 text-[0.9375rem] leading-[1.6] text-[var(--muted-strong)]">
-                      {item}
+                      <InlineMarkdown>{item}</InlineMarkdown>
                     </p>
                   </div>
                 ))}
