@@ -27,7 +27,7 @@ blocker_discovered: false
 
 ## What Happened
 
-I created a typed `HostedLaunchEvidence` struct and an `evaluateHostedLaunchEvidence` function in `src/lib/hosted-launch-proof.ts`. This contract separates machine-verifiable evidence (deploy layout, pm2/systemd state, refresh/sweep artifacts, analysis persistence under `/srv`) from the human-only browser UAT proof. 
+I created a typed `HostedLaunchEvidence` struct and an `evaluateHostedLaunchEvidence` function in `src/lib/hosted-launch-proof.ts`. This contract separates machine-verifiable evidence (deploy layout, pm2/systemd state, refresh/sweep artifacts, analysis persistence under `/srv`) from the human-only browser UAT proof.
 Then, I wrote `src/lib/__tests__/hosted-launch-proof.test.ts` to lock in the passing and failing conditions, specifically verifying the pending-UAT edge case.
 Finally, I wrote `scripts/verify-s07-hosted-launch.ts`, which gathers the live evidence using Node `fs` and `execSync`, evaluates it, and emits a structured JSON payload containing failing check ids, phases, next inspection surfaces, and artifact paths, instead of raw command output.
 
@@ -40,6 +40,14 @@ Finally, I wrote `scripts/verify-s07-hosted-launch.ts`, which gathers the live e
 ## Diagnostics
 
 - The CLI `scripts/verify-s07-hosted-launch.ts` outputs a highly-structured JSON object. If `passed` is false, it points to a specific `failingPhase`, `failingCheckId`, and suggests a `nextInspectionSurface` to help the operator debug. It never prints raw shell error lines.
+
+## Verification Evidence
+
+| #   | Command                                                                          | Exit Code | Verdict                                                        | Duration |
+| --- | -------------------------------------------------------------------------------- | --------- | -------------------------------------------------------------- | -------- |
+| 1   | `npx vitest run src/lib/__tests__/hosted-launch-proof.test.ts`                   | 0         | ✅ pass (7 tests)                                              | 0.4s     |
+| 2   | `node --import tsx scripts/verify-s07-hosted-launch.ts --emit-diagnostic-bundle` | 1         | ✅ pass (structured diagnostic with simulated has-tsx failure) | ~2s      |
+| 3   | `node --import tsx scripts/verify-s07-hosted-launch.ts`                          | 1         | ✅ pass (expected: fails on dev with missing host paths)       | ~2s      |
 
 ## Deviations
 

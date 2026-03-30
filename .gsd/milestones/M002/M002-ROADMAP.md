@@ -75,8 +75,12 @@ This milestone is complete only when all are true:
 
   > After this: the app runs on the target Proxmox layout with persistent storage, supervised process management, and unattended deploy/restart mechanics that preserve rollback paths.
 
-- [ ] **S07: End-to-End Hosted Launch Proof** `risk:high` `depends:[S04,S06]`
+- [x] **S07: End-to-End Hosted Launch Proof** `risk:high` `depends:[S04,S06]`
+
   > After this: the real hosted system proves private access, fresh synced content, on-demand analysis, and unattended automation working together for the launch experience.
+
+- [ ] **S08: Merge Conflict Resolution and Integration Proof** `risk:medium` `depends:[S01,S02,S03,S04,S05,S06,S07]`
+  > After this: the M002 worktree compiles cleanly with zero TypeScript errors, all merge conflicts across source code, tests, documentation, and data files are resolved, representative verification harnesses pass, and the milestone is in a shippable integration state.
 
 ## Boundary Map
 
