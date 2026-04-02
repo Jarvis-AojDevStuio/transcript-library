@@ -48,8 +48,8 @@ jobs:
           YT_COOKIES: ${{ secrets.YT_COOKIES }}
         run: |
           if [ -n "$YT_COOKIES" ]; then
-            printf "%s" "$YT_COOKIES" > .yt-cookies.txt
-            echo "Wrote .yt-cookies.txt ($(wc -c < .yt-cookies.txt) bytes)"
+            printf "%s" "$YT_COOKIES" > pipeline/.yt-cookies.txt
+            echo "Wrote pipeline/.yt-cookies.txt ($(wc -c < pipeline/.yt-cookies.txt) bytes)"
           else
             echo "::warning::YT_COOKIES secret is not set. yt-dlp may hit bot checks."
             echo "To fix: export YouTube cookies (Netscape format) and set repo secret YT_COOKIES."
@@ -59,6 +59,7 @@ jobs:
         env:
           PYTHONUNBUFFERED: '1'
         run: |
+          cd pipeline
           ./sync_playlist.sh
 
       - name: Push changes (if any)
