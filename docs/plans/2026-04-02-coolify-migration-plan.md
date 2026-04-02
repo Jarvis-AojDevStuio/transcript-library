@@ -10,13 +10,17 @@
 
 **Design doc:** `docs/plans/2026-04-02-coolify-migration-design.md`
 
+**Revision notes:** Updated after Codex code review (2026-04-02). Addresses 9 findings (3 critical, 4 high, 2 medium). Restructured into two passes per Codex recommendation.
+
 ---
 
-## Phase 1: Repo Cleanup (prerequisite)
+## Pass 1: Core Migration (merge, deploy, cutover)
 
-### Task 1: Resolve merge conflicts in transcript-library
+### Phase 1: Repo Cleanup (prerequisite)
 
-The repo has unresolved conflict markers in 5 files. These MUST be resolved before any merge operation.
+#### Task 1: Resolve ALL merge conflicts in transcript-library
+
+The repo has unresolved conflict markers in **both docs and TypeScript test files**. ALL must be resolved before any merge operation.
 
 **Files:**
 
@@ -25,36 +29,50 @@ The repo has unresolved conflict markers in 5 files. These MUST be resolved befo
 - Modify: `docs/operations/source-repo-sync-contract.md` — 6+ conflict blocks
 - Modify: `docs/architecture/system-overview.md` — 5+ conflict blocks
 - Modify: `README.md:275-286` — 3 conflict blocks
+- Modify: `src/lib/__tests__/hosted-config.test.ts` — conflict markers
+- Modify: `src/lib/__tests__/analyze-route.test.ts` — conflict markers
 
-**Step 1: Identify all conflict markers**
+**Step 1: Identify ALL conflict markers (including TypeScript)**
 
-Run: `cd ~/Projects/transcript-library && grep -rn '<<<<<<<' --include='*.md' --include='justfile' . | grep -v node_modules | grep -v .gsd`
+Run: `cd ~/Projects/transcript-library && grep -rn '<<<<<<<' . --include='*.md' --include='*.ts' --include='*.tsx' --include='justfile' | grep -v node_modules | grep -v .gsd`
 
 **Step 2: Resolve each file**
 
-For each file, read it, understand both sides of the conflict, pick the correct resolution (generally HEAD/main wins, incorporate any new recipes from branches).
+For each file, read it, understand both sides, pick the correct resolution.
 
-For `justfile`: keep both `rebuild-catalog`, `rebuild-catalog-check`, AND `backfill-insights` recipes. Remove all `<<<<<<<`, `=======`, `>>>>>>>` markers.
+For `justfile`: keep `rebuild-catalog`, `rebuild-catalog-check`, AND `backfill-insights` recipes.
 
-For `.md` docs: the deployment plan doc is being superseded by the Coolify migration design. Resolve conflicts by taking the most complete version of each section.
+For `.md` docs: the old deployment plan doc is superseded by this Coolify migration. Resolve by taking the most complete version.
+
+For `.ts` test files: read both sides carefully, keep the most current test expectations.
 
 **Step 3: Verify no markers remain**
 
-Run: `grep -rn '<<<<<<<' --include='*.md' --include='justfile' . | grep -v node_modules | grep -v .gsd`
+Run: `grep -rn '<<<<<<<' . --include='*.md' --include='*.ts' --include='*.tsx' --include='justfile' | grep -v node_modules | grep -v .gsd`
 Expected: no output
 
-**Step 4: Commit**
+**Step 4: Run tests to verify repo is in a clean state**
+
+Run: `npm test`
+Expected: all tests pass (or at least no parse errors from conflict markers)
+
+**Step 5: Clean up .gsd/ worktrees if present**
+
+Run: `ls .gsd/worktrees/ 2>/dev/null`
+If worktrees exist with conflicts, either resolve or remove them. Add `.gsd/` to `.gitignore` if not already there.
+
+**Step 6: Commit**
 
 ```bash
 git add -A
-git commit -m "fix: resolve all merge conflict markers in justfile and docs"
+git commit -m "fix: resolve all merge conflict markers in justfile, docs, and tests"
 ```
 
 ---
 
-## Phase 2: Merge Repos
+### Phase 2: Merge Repos
 
-### Task 2: Merge playlist-transcripts into transcript-library via git subtree
+#### Task 2: Merge playlist-transcripts into transcript-library via git subtree
 
 **Step 1: Add remote**
 
@@ -70,7 +88,7 @@ git fetch transcripts
 git subtree add --prefix=pipeline transcripts master --squash
 ```
 
-This creates `pipeline/` containing the entire playlist-transcripts repo. The `--squash` condenses the history into one merge commit.
+This creates `pipeline/` containing the entire playlist-transcripts repo. `--squash` condenses into one merge commit (does NOT preserve individual commit history — the original repo remains on GitHub as archive).
 
 **Step 3: Verify structure**
 
@@ -82,14 +100,12 @@ Expected: `ai-llms/`, `business/`, `faith/`, `finance-investing/`, `hardware-hom
 
 **Step 4: Commit is automatic** (subtree add creates its own commit)
 
-### Task 3: Move GitHub Action from pipeline/ to repo root
-
-The sync workflow needs to live at `.github/workflows/` in the repo root (GitHub only reads from there).
+#### Task 3: Move GitHub Action from pipeline/ to repo root
 
 **Files:**
 
 - Move: `pipeline/.github/workflows/sync-playlist.yml` → `.github/workflows/sync-playlist.yml`
-- Delete: `pipeline/.github/` (the claude.yml and claude-code-review.yml in the pipeline are duplicates of ones already in the repo root)
+- Delete: `pipeline/.github/` (the claude.yml and claude-code-review.yml in the pipeline are duplicates)
 
 **Step 1: Move the workflow**
 
@@ -100,7 +116,7 @@ rm -rf pipeline/.github
 
 **Step 2: Update paths in sync-playlist.yml**
 
-Every path reference must be prefixed with `pipeline/`. Key changes:
+Every path reference must be prefixed with `pipeline/`:
 
 ```yaml
 # In the "Run sync" step, change:
@@ -108,18 +124,8 @@ run: |
   cd pipeline
   ./sync_playlist.sh
 
-# In the "Push changes" step, change:
-run: |
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    git add -A
-    git commit -m "Update playlist transcripts $(date -u '+%Y-%m-%d %H:%M UTC')" || true
-    git push
-  else
-    echo "No changes to push."
-  fi
+# The "Push changes" step stays the same (git add -A covers everything)
 ```
-
-The sync_playlist.sh uses `REPO="$(cd "$(dirname "$0")" && pwd)"` which will correctly resolve to `pipeline/` since it lives there.
 
 **Step 3: Verify workflow syntax**
 
@@ -133,16 +139,26 @@ git add -A
 git commit -m "feat: migrate sync-playlist workflow to unified repo"
 ```
 
-### Task 4: Update app to read transcripts from pipeline/ instead of external repo
+#### Task 4: Update app to read transcripts from pipeline/ AND retire source-refresh
 
-The app currently reads from `process.env.PLAYLIST_TRANSCRIPTS_REPO` (an absolute external path). Change it to read from `./pipeline` relative to the repo root.
+This is the most critical code change. The app currently has two coupled systems:
+
+1. `playlistTranscriptsRepoRoot()` reads from an external path
+2. `source-refresh.ts` does runtime `git fetch`/`merge` on that external repo
+3. `/api/sync-hook` triggers the refresh
+
+After merge, `pipeline/` is NOT a standalone git repo. The runtime git sync model is dead. Replace it with: transcripts ship in the image, catalog rebuilt on deploy.
 
 **Files:**
 
 - Modify: `src/lib/catalog.ts:65-73` — change `playlistTranscriptsRepoRoot()`
-- Modify: `src/lib/hosted-config.ts:70+` — remove PLAYLIST_TRANSCRIPTS_REPO validation
+- Modify: `src/lib/hosted-config.ts:70+` — gut the PLAYLIST_TRANSCRIPTS_REPO validation entirely
 - Modify: `src/lib/analysis.ts:420-422` — update transcript path resolution
 - Modify: `src/app/api/raw/route.ts:10` — update raw file serving path
+- **Delete or stub:** `src/lib/source-refresh.ts` — runtime git sync is impossible now
+- **Delete or stub:** `src/app/api/sync-hook/route.ts` — no longer needed
+- Modify: `src/lib/daily-operational-sweep.ts` — remove `refreshSourceCatalog` call
+- Modify: `src/instrumentation.ts` — remove source-refresh from startup if present
 
 **Step 1: Update `src/lib/catalog.ts`**
 
@@ -150,134 +166,111 @@ Change `playlistTranscriptsRepoRoot()` at line 65:
 
 ```typescript
 export function playlistTranscriptsRepoRoot(): string {
-  // In unified repo, transcripts live at ./pipeline
+  // Allow env override for local dev flexibility
   const override = process.env.PLAYLIST_TRANSCRIPTS_REPO;
-  if (override) return override; // Allow override for local dev flexibility
+  if (override) return override;
+  // In unified repo, transcripts live at ./pipeline
   return path.join(process.cwd(), "pipeline");
 }
 ```
 
-**Step 2: Update `src/lib/hosted-config.ts`**
+**Step 2: Gut `src/lib/hosted-config.ts` PLAYLIST_TRANSCRIPTS_REPO validation**
 
-Remove the hard error for missing `PLAYLIST_TRANSCRIPTS_REPO` in hosted mode. The pipeline/ directory ships with the app now. Keep the validation that the directory exists, but point it at `./pipeline`:
+Remove ALL of these checks (they assume an external git worktree):
 
-- Remove the required check for `PLAYLIST_TRANSCRIPTS_REPO` (around line 172)
-- Change the directory existence check to validate `path.join(process.cwd(), 'pipeline', 'youtube-transcripts')` exists
-- Remove the git worktree / detached HEAD checks (no longer relevant — it's part of the repo, not a separate clone)
+- The path must be absolute
+- The directory must exist
+- It must be a git worktree
+- HEAD must not be detached
+- The required check that hard-errors if missing
 
-**Step 3: Update `src/app/api/raw/route.ts`**
+Replace with a simple check that `pipeline/youtube-transcripts/` exists relative to cwd.
 
-The route at line 10 should call `playlistTranscriptsRepoRoot()` which now returns `./pipeline` by default.
+**Step 3: Retire `source-refresh.ts`**
 
-**Step 4: Update `src/lib/analysis.ts`**
+Either delete the file or replace its exported functions with no-ops that log a deprecation warning. Update all callers:
 
-Same pattern — it already calls `playlistTranscriptsRepoRoot()`, so the upstream change propagates.
+- `daily-operational-sweep.ts` calls `refreshSourceCatalog` — remove that call
+- `instrumentation.ts` may reference source refresh — remove
+- `/api/sync-hook/route.ts` — delete the entire route handler or return 410 Gone
 
-**Step 5: Test locally**
+**Step 4: Update `src/app/api/raw/route.ts`**
+
+The route at line 10 calls `playlistTranscriptsRepoRoot()` which now returns `./pipeline` by default. Verify the path construction still works.
+
+**Step 5: Update `src/lib/analysis.ts`**
+
+Same pattern — verify it calls `playlistTranscriptsRepoRoot()` and the returned path works with `pipeline/youtube-transcripts/`.
+
+**Step 6: Update tests**
+
+Fix `src/lib/__tests__/hosted-config.test.ts` to reflect the removed PLAYLIST_TRANSCRIPTS_REPO checks.
+
+**Step 7: Run full test suite**
 
 ```bash
-# Remove PLAYLIST_TRANSCRIPTS_REPO from .env.local (or comment it out)
-just build
+npm test
 ```
 
-Expected: build succeeds, app can find transcripts at `./pipeline/youtube-transcripts/`
+Expected: all tests pass with the new path model
 
-**Step 6: Commit**
+**Step 8: Build test**
+
+```bash
+npx next build --webpack
+```
+
+Expected: build succeeds
+
+**Step 9: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: read transcripts from embedded pipeline/ directory"
+git commit -m "feat: read transcripts from embedded pipeline/, retire source-refresh and sync-hook"
 ```
 
 ---
 
-## Phase 3: Multi-Playlist Support
+### Phase 3: Dockerize
 
-### Task 5: Add playlist field to transcript frontmatter
+#### Task 5: Create docker-entrypoint.sh
 
-The Python ingest script needs to tag each transcript with which playlist it came from.
-
-**Files:**
-
-- Modify: `pipeline/youtube-transcripts/scripts/ingest_transcript.py` — add `playlist` field to YAML frontmatter
-- Modify: `pipeline/sync_playlist.sh` — pass playlist name to ingest script
-- Modify: `pipeline/playlists.yml` — add Spirit Talk playlist
-
-**Step 1: Update playlists.yml**
-
-```yaml
-playlists:
-  - name: main-curated
-    url: "https://youtube.com/playlist?list=PLnuGPVqDkDzSAf93OH2Zq1_6yXWZZOjdz"
-    enabled: true
-  - name: spirit-talk
-    url: "https://youtube.com/playlist?list=PLnuGPVqDkDzSxB9GByqQDr3t2Izl-hEoz"
-    enabled: true
-```
-
-**Step 2: Update sync_playlist.sh**
-
-The script iterates playlists from `playlists.yml`. It needs to pass the playlist `name` to `ingest_transcript.py` so the frontmatter includes `playlist: spirit-talk`. Read the current script to understand the iteration pattern, then add a `--playlist` argument to the ingest call.
-
-**Step 3: Update ingest_transcript.py**
-
-Add `--playlist` CLI argument. Write it into the YAML frontmatter as `playlist: <name>`.
-
-**Step 4: Test**
-
-```bash
-cd pipeline && ./sync_playlist.sh
-```
-
-Expected: new transcripts have `playlist: main-curated` or `playlist: spirit-talk` in frontmatter.
-
-**Step 5: Commit**
-
-```bash
-git add -A
-git commit -m "feat: multi-playlist support with playlist frontmatter tagging"
-```
-
-### Task 6: Add playlist filtering to the Next.js UI
+The entrypoint detects if transcripts have changed since last catalog build and rebuilds if needed. This solves the stale-catalog-on-redeploy problem.
 
 **Files:**
 
-- Modify: `src/lib/catalog.ts` — add playlist field to VideoRow, index from frontmatter
-- Modify: video listing pages — add playlist filter/tabs
+- Create: `deploy/docker-entrypoint.sh`
 
-**Step 1: Read the current catalog rebuild logic**
-
-Check `scripts/rebuild-catalog.ts` and `src/lib/catalog-db.ts` to understand how the SQLite catalog is built from transcript files.
-
-**Step 2: Add `playlist` column to the catalog DB schema**
-
-In the catalog rebuild script, add `playlist TEXT` to the videos table. Parse it from the transcript frontmatter.
-
-**Step 3: Add playlist filter to the UI**
-
-Add a playlist selector/tabs to the video listing page. Filter videos by `WHERE playlist = ?` when a playlist is selected.
-
-**Step 4: Test**
+**Step 1: Write the entrypoint**
 
 ```bash
-just rebuild-catalog
-just start
+#!/bin/bash
+set -e
+
+CHECKSUM_FILE="/app/data/catalog/.transcript-checksum"
+CURRENT_CHECKSUM=$(find /app/pipeline/youtube-transcripts/topics -name '*.md' -exec md5sum {} + 2>/dev/null | sort | md5sum | cut -d' ' -f1)
+PREVIOUS_CHECKSUM=$(cat "$CHECKSUM_FILE" 2>/dev/null || echo "none")
+
+if [ "$CURRENT_CHECKSUM" != "$PREVIOUS_CHECKSUM" ]; then
+  echo "[entrypoint] Transcript changes detected. Rebuilding catalog..."
+  npx tsx scripts/rebuild-catalog.ts
+  echo "$CURRENT_CHECKSUM" > "$CHECKSUM_FILE"
+  echo "[entrypoint] Catalog rebuild complete."
+else
+  echo "[entrypoint] No transcript changes. Skipping catalog rebuild."
+fi
+
+exec "$@"
 ```
 
-Expected: UI shows playlist tabs, filtering works.
-
-**Step 5: Commit**
+**Step 2: Commit**
 
 ```bash
-git add -A
-git commit -m "feat: playlist filtering in catalog and UI"
+git add deploy/docker-entrypoint.sh
+git commit -m "feat: add docker entrypoint with automatic catalog rebuild"
 ```
 
----
-
-## Phase 4: Dockerize
-
-### Task 7: Create Dockerfile
+#### Task 6: Create Dockerfile
 
 **Files:**
 
@@ -286,9 +279,9 @@ git commit -m "feat: playlist filtering in catalog and UI"
 **Step 1: Write the Dockerfile**
 
 ```dockerfile
-FROM node:22-slim AS base
+FROM node:22-slim
 
-# Install system deps for Python pipeline and Claude CLI
+# System deps for Python pipeline and Claude CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git python3 python3-pip python3-venv && \
     rm -rf /var/lib/apt/lists/*
@@ -309,11 +302,15 @@ COPY . .
 RUN python3 -m venv pipeline/.venv && \
     pipeline/.venv/bin/pip install -r pipeline/requirements.txt
 
-# Build Next.js
-RUN npm run build
+# Use --webpack flag to avoid Next 16 turbopack panic
+RUN npx next build --webpack
 
 EXPOSE 3000
 
+# Entrypoint rebuilds catalog if transcripts changed, then starts app
+COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["npm", "start"]
 ```
 
@@ -334,7 +331,7 @@ docker run -p 3000:3000 \
   transcript-library
 ```
 
-Expected: app starts, accessible at http://localhost:3000
+Expected: app starts, entrypoint rebuilds catalog on first run, accessible at http://localhost:3000
 
 **Step 4: Commit**
 
@@ -343,7 +340,7 @@ git add Dockerfile
 git commit -m "feat: add Dockerfile for Coolify deployment"
 ```
 
-### Task 8: Create docker-compose.yml
+#### Task 7: Create docker-compose.yml
 
 **Files:**
 
@@ -360,7 +357,7 @@ services:
     volumes:
       - catalog-data:/app/data/catalog
       - insights-data:/app/data/insights
-      - claude-auth:/home/node/.claude:ro
+      - /home/deploy/.claude:/root/.claude:ro
     environment:
       - HOSTED=true
       - NODE_ENV=production
@@ -375,13 +372,9 @@ services:
 volumes:
   catalog-data:
   insights-data:
-  claude-auth:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/deploy/.claude
 ```
+
+**Note:** Claude auth mounted at `/root/.claude` because container runs as root (Coolify default).
 
 **Step 2: Commit**
 
@@ -390,7 +383,7 @@ git add docker-compose.yml
 git commit -m "feat: add docker-compose.yml for Coolify"
 ```
 
-### Task 9: Add .dockerignore
+#### Task 8: Create .dockerignore
 
 **Files:**
 
@@ -407,7 +400,7 @@ data/catalog
 data/insights
 pipeline/.venv
 pipeline/youtube-transcripts/inbox
-deploy
+deploy/__tests__
 mockups
 test-results
 *.log
@@ -422,11 +415,9 @@ git commit -m "chore: add .dockerignore"
 
 ---
 
-## Phase 5: Install Coolify on Proxmox
+### Phase 4: Install Coolify on Proxmox
 
-### Task 10: Create Coolify LXC via community script
-
-This task is performed on the **Proxmox host** via SSH.
+#### Task 9: Create Coolify LXC via community script
 
 **Step 1: SSH into Proxmox**
 
@@ -458,55 +449,9 @@ Expected: Coolify setup wizard
 
 **Step 5: Record the LXC details**
 
-Note the LXC ID, IP address, and Coolify dashboard URL for the homelab repo docs.
+Note the LXC ID, IP address, and Coolify dashboard URL.
 
-### Task 11: Connect Coolify to GitHub
-
-**Step 1: In Coolify dashboard**
-
-Go to: Sources → Add New → GitHub App
-
-Follow the OAuth flow to connect your `AojdevStudio` GitHub organization.
-
-**Step 2: Verify connection**
-
-The `AojdevStudio/transcript-library` repo should be visible in Coolify's repo picker.
-
-### Task 12: Create the application in Coolify
-
-**Step 1: Create new project**
-
-In Coolify: Projects → Add New → name it "Transcript Library"
-
-**Step 2: Add application**
-
-- Source: GitHub → `AojdevStudio/transcript-library` → branch `main`
-- Build pack: Docker Compose
-- Docker Compose file: `docker-compose.yml`
-- Auto-deploy: enabled
-
-**Step 3: Configure environment variables**
-
-In the app's Environment tab, add:
-
-- `PRIVATE_API_TOKEN` = (generate a new one)
-- `CLOUDFLARE_ACCESS_AUD` = (from current LXC 101 config)
-- `CLOUDFLARE_ACCESS_TEAM_DOMAIN` = `aojdevstudio`
-- `ANALYSIS_PROVIDER` = `claude-cli`
-- `CLAUDE_ANALYSIS_MODEL` = (current value from LXC 101)
-- `SYNC_TOKEN` = (from current LXC 101 config)
-
-**Step 4: Configure persistent storage**
-
-Verify the volumes from docker-compose.yml are recognized. Coolify should auto-detect them.
-
-**Step 5: Deploy**
-
-Trigger first deploy from the Coolify dashboard. Watch the build logs.
-
-Expected: app builds and starts on port 3000.
-
-### Task 13: Set up Claude CLI auth on Coolify LXC
+#### Task 10: Set up Claude CLI auth on Coolify LXC (BEFORE first analysis)
 
 **Step 1: SSH into the Coolify LXC**
 
@@ -522,57 +467,147 @@ su - deploy
 npx @anthropic-ai/claude-code login
 ```
 
-Follow the OAuth flow to authenticate. This creates `/home/deploy/.claude/` with the session.
+Follow the OAuth flow. This creates `/home/deploy/.claude/`.
 
-**Step 3: Verify the volume mount works**
-
-Check that the Docker container can see the auth files:
+**Step 3: Verify the auth directory exists**
 
 ```bash
-docker exec <container-id> ls /home/node/.claude/
+ls -la /home/deploy/.claude/
 ```
 
-Expected: OAuth session files visible
+Expected: OAuth session files present
 
-### Task 14: Configure Coolify cron for daily analysis
+#### Task 11: Seed Docker volumes with existing data from LXC 101
+
+**This must happen BEFORE the first production cutover.** Without it, all existing analyses disappear.
+
+**Step 1: Export data from LXC 101**
+
+```bash
+ssh root@<lxc-101-ip>
+tar czf /tmp/catalog-data.tar.gz -C /srv/transcript-library/catalog .
+tar czf /tmp/insights-data.tar.gz -C /srv/transcript-library/insights .
+```
+
+**Step 2: Copy to Coolify LXC**
+
+```bash
+scp root@<lxc-101-ip>:/tmp/catalog-data.tar.gz root@<coolify-lxc-ip>:/tmp/
+scp root@<lxc-101-ip>:/tmp/insights-data.tar.gz root@<coolify-lxc-ip>:/tmp/
+```
+
+**Step 3: Import into Docker volumes**
+
+After the first deploy creates the volumes:
+
+```bash
+ssh root@<coolify-lxc-ip>
+
+# Find the volume mount paths
+docker volume inspect <project>_catalog-data | jq '.[0].Mountpoint'
+docker volume inspect <project>_insights-data | jq '.[0].Mountpoint'
+
+# Extract into volumes
+tar xzf /tmp/catalog-data.tar.gz -C <catalog-mountpoint>/
+tar xzf /tmp/insights-data.tar.gz -C <insights-mountpoint>/
+```
+
+**Step 4: Restart the app container**
+
+```bash
+# Via Coolify dashboard or:
+docker restart <container-id>
+```
+
+**Step 5: Verify data**
+
+Open the app and confirm existing videos and analyses are visible.
+
+#### Task 12: Connect Coolify to GitHub and deploy
 
 **Step 1: In Coolify dashboard**
 
-Go to the app → Scheduled Tasks → Add
+Go to: Sources → Add New → GitHub App. Follow OAuth flow to connect `AojdevStudio`.
 
-- Name: `daily-analysis-sweep`
+**Step 2: Create new project**
+
+Projects → Add New → name it "Transcript Library"
+
+**Step 3: Add application**
+
+- Source: GitHub → `AojdevStudio/transcript-library` → branch `main`
+- Build pack: Docker Compose
+- Docker Compose file: `docker-compose.yml`
+- Auto-deploy: enabled
+
+**Step 4: Configure environment variables**
+
+In the app's Environment tab, add:
+
+- `PRIVATE_API_TOKEN` = (generate a new one)
+- `CLOUDFLARE_ACCESS_AUD` = (from current LXC 101 `.env.local`)
+- `CLOUDFLARE_ACCESS_TEAM_DOMAIN` = `aojdevstudio`
+- `ANALYSIS_PROVIDER` = `claude-cli`
+- `CLAUDE_ANALYSIS_MODEL` = (current value from LXC 101)
+- `SYNC_TOKEN` = (from current LXC 101)
+
+**Step 5: Migrate GitHub Actions secrets**
+
+On the `AojdevStudio/transcript-library` GitHub repo, ensure these secrets exist:
+
+- `YT_COOKIES` — YouTube cookies for yt-dlp (copy from playlist-transcripts repo)
+- `CLAUDE_CODE_OAUTH_TOKEN` — for Claude bot workflows
+
+**Step 6: Deploy**
+
+Trigger first deploy from Coolify dashboard. Watch build logs.
+
+Expected: app builds (with `--webpack`), entrypoint runs catalog rebuild, app starts on port 3000.
+
+#### Task 13: Configure Coolify cron jobs
+
+**Two separate cron jobs needed:**
+
+**Step 1: Daily operational sweep (catalog refresh + repair)**
+
+In Coolify: app → Scheduled Tasks → Add
+
+- Name: `daily-sweep`
 - Command: `npm run daily:sweep`
 - Schedule: `0 3 * * *` (03:00 UTC daily)
 
-**Step 2: Verify cron**
+**Step 2: Analysis on new videos (separate command)**
 
-Wait for next execution or trigger manually from the dashboard.
+In Coolify: app → Scheduled Tasks → Add
+
+- Name: `nightly-insights`
+- Command: `npm run nightly:insights`
+- Schedule: `0 4 * * *` (04:00 UTC daily, after sweep completes)
+
+**Note:** `daily:sweep` does refresh + repair only. `nightly:insights` is the actual analysis command that generates insights for unprocessed videos.
 
 ---
 
-## Phase 6: Wire Cloudflare Tunnel
+### Phase 5: Canary Validation and Cutover
 
-### Task 15: Update Cloudflare tunnel config
+#### Task 14: Wire Cloudflare tunnel with canary hostname
 
 **Files:**
 
 - Modify: `proxmox/cloudflared/config.yml` (in homelab repo)
 
-**Step 1: Add ingress rule for Coolify LXC**
+**Step 1: Add canary ingress rule**
 
 Add before the catch-all rule:
 
 ```yaml
-- hostname: library.aojdevstudio.me
+- hostname: library-canary.aojdevstudio.me
   service: http://<coolify-lxc-ip>:3000
 ```
 
-**Step 2: Optionally add Coolify dashboard access**
+**Step 2: Add canary hostname to Cloudflare Access**
 
-```yaml
-- hostname: coolify.aojdevstudio.me
-  service: http://<coolify-lxc-ip>:8000
-```
+In the Zero Trust dashboard, add `library-canary.aojdevstudio.me` to the same Access application that protects `library.aojdevstudio.me`.
 
 **Step 3: Deploy the config to LXC 102**
 
@@ -581,80 +616,73 @@ scp proxmox/cloudflared/config.yml root@10.69.1.178:/etc/cloudflared/config.yml
 ssh root@10.69.1.178 'docker restart cloudflared'
 ```
 
-**Step 4: Verify**
+**Step 4: Verify canary**
 
-Open: `https://library.aojdevstudio.me`
-Expected: transcript-library app loads via Cloudflare tunnel from the Coolify LXC
+Open: `https://library-canary.aojdevstudio.me`
+Expected: transcript-library app loads from Coolify LXC
 
 **Step 5: Commit homelab changes**
 
 ```bash
 cd ~/Projects/homelab
 git add proxmox/cloudflared/config.yml
-git commit -m "feat: route transcript-library to Coolify LXC"
+git commit -m "feat: add canary hostname for transcript-library Coolify migration"
 ```
 
----
+#### Task 15: Parallel validation (48 hours)
 
-## Phase 7: Validate and Decommission
-
-### Task 16: Parallel validation
-
-Run both old (LXC 101) and new (Coolify LXC) simultaneously for 48 hours.
+Run both old (LXC 101 at `library.aojdevstudio.me`) and new (Coolify at `library-canary.aojdevstudio.me`) simultaneously.
 
 **Checklist:**
 
-- [ ] App loads at `library.aojdevstudio.me`
-- [ ] Cloudflare Access OTP works
-- [ ] Video listing shows all 244+ transcripts
+- [ ] Canary app loads at `library-canary.aojdevstudio.me`
+- [ ] Cloudflare Access OTP works on canary
+- [ ] Video listing shows all 244+ transcripts (including seeded data)
 - [ ] Video playback + transcript reading works
-- [ ] Analysis pipeline runs (trigger manually via Coolify cron)
+- [ ] Existing analyses are visible (seeded insights)
 - [ ] GitHub Action sync runs (check Actions tab)
 - [ ] Auto-deploy fires on push (make a trivial commit, watch Coolify)
-- [ ] SQLite catalog persists across deploys (redeploy, check data survives)
+- [ ] SQLite catalog persists AND rebuilds across deploys (redeploy, check data survives and new transcripts appear)
 - [ ] Daily sweep cron fires at 03:00 UTC
+- [ ] Nightly insights cron fires at 04:00 UTC
+- [ ] Claude CLI analysis works (trigger manually, check output)
 
-### Task 17: Update homelab repo documentation
+#### Task 16: Production cutover
 
-**Files:**
+**Step 1: Update cloudflared config**
 
-- Modify: `proxmox/CLAUDE.md` — add Coolify LXC to service inventory
-- Modify: `CLAUDE.md` (root) — update Service Architecture section
-- Modify: `KNOWN_ISSUES.md` — remove LXC 101 references if applicable
+Replace canary with production hostname:
 
-**Step 1: Update proxmox/CLAUDE.md**
-
-Add Coolify LXC entry with IP, LXC ID, what it runs, Coolify dashboard URL.
-
-**Step 2: Update root CLAUDE.md**
-
-In the Service Architecture section, replace LXC 101 references with the Coolify LXC.
-
-**Step 3: Commit**
-
-```bash
-git add -A
-git commit -m "docs: add Coolify LXC to homelab documentation"
+```yaml
+- hostname: library.aojdevstudio.me
+  service: http://<coolify-lxc-ip>:3000
 ```
 
-### Task 18: Decommission LXC 101
+Remove the canary rule.
 
-Only after Task 16 validation passes.
-
-**Step 1: Back up persistent data from LXC 101**
+**Step 2: Deploy config**
 
 ```bash
-ssh root@<lxc-101-ip>
-tar czf /tmp/transcript-library-backup.tar.gz /srv/transcript-library/
+scp proxmox/cloudflared/config.yml root@10.69.1.178:/etc/cloudflared/config.yml
+ssh root@10.69.1.178 'docker restart cloudflared'
 ```
 
-Copy to NAS:
+**Step 3: Verify production**
+
+Open: `https://library.aojdevstudio.me`
+Expected: served from Coolify LXC
+
+**Step 4: Commit**
 
 ```bash
-scp root@<lxc-101-ip>:/tmp/transcript-library-backup.tar.gz NAS:/volume1/backups/
+cd ~/Projects/homelab
+git add proxmox/cloudflared/config.yml
+git commit -m "feat: cut over library.aojdevstudio.me to Coolify LXC"
 ```
 
-**Step 2: Stop all services on LXC 101**
+#### Task 17: Decommission LXC 101
+
+**Step 1: Stop all services**
 
 ```bash
 ssh root@<lxc-101-ip>
@@ -663,11 +691,15 @@ systemctl stop deploy-hook transcript-library-sweep.timer
 systemctl stop cloudflared
 ```
 
-**Step 3: Remove cloudflared ingress for old LXC 101**
+**Step 2: Final backup to NAS (safety copy)**
 
-Remove the old `library.aojdevstudio.me` route pointing to LXC 101 from `proxmox/cloudflared/config.yml` (should already be replaced in Task 15).
+```bash
+ssh root@<lxc-101-ip>
+tar czf /tmp/transcript-library-full-backup.tar.gz /srv/transcript-library/
+scp root@<lxc-101-ip>:/tmp/transcript-library-full-backup.tar.gz NAS:/volume1/backups/
+```
 
-**Step 4: Destroy LXC 101 on Proxmox**
+**Step 3: Destroy LXC 101**
 
 ```bash
 ssh proxmox
@@ -675,29 +707,81 @@ pct stop 101
 pct destroy 101
 ```
 
-**Step 5: Update homelab repo**
-
-Remove any LXC 101-specific config, commit.
+**Step 4: Update homelab docs**
 
 ```bash
+cd ~/Projects/homelab
+# Update proxmox/CLAUDE.md — add Coolify LXC, remove LXC 101
+# Update CLAUDE.md (root) — update Service Architecture
+# Update KNOWN_ISSUES.md if applicable
 git add -A
-git commit -m "chore: decommission LXC 101 after Coolify migration"
+git commit -m "docs: replace LXC 101 with Coolify LXC in homelab documentation"
 ```
+
+---
+
+## Pass 2: Multi-Playlist Support (separate effort)
+
+> **Do this AFTER Pass 1 is stable.** Multi-playlist is a feature addition, not a migration prerequisite.
+
+### Task 18: Add playlist field to transcript pipeline
+
+**Files:**
+
+- Modify: `pipeline/playlists.yml` — add Spirit Talk playlist
+- Modify: `pipeline/sync_playlist.sh` — pass playlist name to ingest script
+- Modify: `pipeline/youtube-transcripts/scripts/ingest_transcript.py` — add `playlist` field to frontmatter
+
+**Design consideration:** If a video can appear in multiple playlists, use an array/CSV field for playlist membership, not a scalar. Model as `playlists: "main-curated,spirit-talk"` in frontmatter and split in the catalog import.
+
+### Task 19: Add playlist to catalog and UI
+
+**Files:**
+
+- Modify: `src/lib/catalog-import.ts` — parse `playlist` from frontmatter/CSV, add to DB schema
+- Modify: `scripts/rebuild-catalog.ts` — include playlist in schema
+- Modify: `pipeline/youtube-transcripts/scripts/build_index.py` — add playlist column to `videos.csv`
+- Modify: video listing pages — add playlist filter/tabs
+
+**Note:** The catalog is built from `videos.csv`, not directly from frontmatter. The pipeline's `build_index.py` must output the playlist field to CSV, then the catalog importer reads it from there.
+
+### Task 20: Decide on unattended analysis strategy
+
+The current `nightly:insights` script is documented as a "legacy explicit analysis workflow." Consider whether it should:
+
+- A) Stay as-is (manual trigger via Coolify cron, operator reviews results)
+- B) Become a dedicated worker/batch job that auto-analyzes new videos
+- C) Be integrated into the daily sweep
+
+This is a design decision, not a code task. Make it after Pass 1 is running.
 
 ---
 
 ## Summary
 
-| Phase | Tasks | Description                                                |
-| ----- | ----- | ---------------------------------------------------------- |
-| 1     | 1     | Resolve merge conflicts                                    |
-| 2     | 2-4   | Merge repos, migrate workflow, update app paths            |
-| 3     | 5-6   | Multi-playlist support (pipeline + UI)                     |
-| 4     | 7-9   | Dockerfile, docker-compose, .dockerignore                  |
-| 5     | 10-14 | Install Coolify, connect GitHub, deploy, Claude auth, cron |
-| 6     | 15    | Wire Cloudflare tunnel                                     |
-| 7     | 16-18 | Validate, document, decommission                           |
+| Pass  | Phase | Tasks | Description                                                        |
+| ----- | ----- | ----- | ------------------------------------------------------------------ |
+| **1** | 1     | 1     | Resolve ALL merge conflicts (md, justfile, AND .ts tests)          |
+| **1** | 2     | 2-4   | Merge repos, migrate workflow, retire source-refresh               |
+| **1** | 3     | 5-8   | Dockerfile, entrypoint with catalog rebuild, compose, dockerignore |
+| **1** | 4     | 9-13  | Coolify install, Claude auth, seed volumes, deploy, cron           |
+| **1** | 5     | 14-17 | Canary validation, cutover, decommission                           |
+| **2** | —     | 18-20 | Multi-playlist support + analysis strategy (after Pass 1 stable)   |
 
-**Total tasks:** 18
-**Estimated phases:** 7 (can be done over multiple sessions)
-**Critical path:** Phase 1 → 2 → 4 → 5 (Coolify install can happen in parallel with Phases 2-4)
+**Total tasks:** 20
+**Critical path:** Phase 1 → 2 → 3 → 4 → 5 (sequential, each depends on prior)
+**Phase 4 (Coolify install) can start in parallel with Phases 1-3** — only Task 11 (seed volumes) and Task 12 (deploy) need the code work done first.
+
+### Codex Review Findings Addressed
+
+| #   | Severity | Finding                                     | Fix                                                      |
+| --- | -------- | ------------------------------------------- | -------------------------------------------------------- |
+| 1   | CRITICAL | Stale catalog after deploy                  | Task 5: docker-entrypoint.sh with checksum-based rebuild |
+| 2   | CRITICAL | Mixed runtime models (git sync vs baked-in) | Task 4: retire source-refresh.ts and /api/sync-hook      |
+| 3   | CRITICAL | No volume seeding before cutover            | Task 11: explicit data migration step                    |
+| 4   | HIGH     | Claude auth wrong HOME dir                  | docker-compose mounts to /root/.claude                   |
+| 5   | HIGH     | daily:sweep ≠ analysis                      | Task 13: two separate cron jobs (sweep + insights)       |
+| 6   | HIGH     | Conflicts in .ts test files missed          | Task 1: expanded grep to include _.ts, _.tsx             |
+| 7   | HIGH     | next build needs --webpack flag             | Dockerfile uses `npx next build --webpack`               |
+| 8   | MEDIUM   | Playlist model underspecified               | Task 18: array/CSV field, deferred to Pass 2             |
+| 9   | MEDIUM   | No canary path for cutover                  | Tasks 14-16: canary hostname validation before cutover   |
