@@ -50,17 +50,6 @@ daily-sweep:
 # Run the legacy nightly analysis workflow explicitly; not the unattended default
 insights:
   node --import tsx scripts/nightly-insights.ts
-<<<<<<< HEAD
-
-# Rebuild the SQLite-backed catalog snapshot with the supported runtime
-rebuild-catalog:
-  npx tsx scripts/rebuild-catalog.ts
-
-# Validate catalog parity without replacing the live snapshot
-rebuild-catalog-check:
-  npx tsx scripts/rebuild-catalog.ts --check
-=======
->>>>>>> gsd/M002/S04
 
 # Rebuild the SQLite-backed catalog snapshot with the supported runtime
 rebuild-catalog:

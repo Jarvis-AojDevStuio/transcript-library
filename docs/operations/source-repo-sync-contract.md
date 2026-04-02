@@ -7,23 +7,10 @@ This document defines the supported boundary between the upstream `playlist-tran
 - **Upstream `playlist-transcripts` owns ingestion and commits.** It pulls playlist changes, writes transcript files, rebuilds its transcript index, and pushes git commits.
 - **Transcript Library owns refreshing its local checkout.** It fast-forwards the local `PLAYLIST_TRANSCRIPTS_REPO` checkout, rebuilds SQLite from that checkout, and records refresh evidence beside the catalog.
 - **Refresh is refresh-only.** It updates source state and browse state; it does **not** start analysis work.
-<<<<<<< HEAD
-<<<<<<< HEAD
 - **The unattended default is the daily operational sweep.** Operators schedule `node --import tsx scripts/daily-operational-sweep.ts`, which runs the supported refresh authority first and then only the conservative historical repair pass.
 - **Analysis remains on-demand.** Users start it from `/api/analyze`, or operators trigger it through explicit analysis workflows when they intentionally want analysis work.
 
 If you need new browse content to appear automatically, use the refresh entrypoints below or schedule the daily sweep that wraps refresh plus safe repair. If you need AI artifacts for a video, run an analysis workflow separately.
-=======
-- **Analysis remains on-demand.** Users start it from `/api/analyze`, or operators trigger it through explicit analysis workflows such as nightly repair/sweep jobs.
-
-If you need new browse content to appear automatically, use the refresh entrypoints below. If you need AI artifacts for a video, run an analysis workflow separately.
->>>>>>> gsd/M002/S03
-=======
-- **The unattended default is the daily operational sweep.** Operators schedule `node --import tsx scripts/daily-operational-sweep.ts`, which runs the supported refresh authority first and then only the conservative historical repair pass.
-- **Analysis remains on-demand.** Users start it from `/api/analyze`, or operators trigger it through explicit analysis workflows when they intentionally want analysis work.
-
-If you need new browse content to appear automatically, use the refresh entrypoints below or schedule the daily sweep that wraps refresh plus safe repair. If you need AI artifacts for a video, run an analysis workflow separately.
->>>>>>> gsd/M002/S04
 
 ## Supported Repository Shape
 
@@ -92,8 +79,6 @@ Behavior:
 - Records request identity metadata in the refresh record.
 - Returns refresh outcomes (`updated`, `noop`, `failed`) instead of analysis batch submission details.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 Important hosted boundary:
 
 - `library.aojdevstudio.me` is the **friend-facing** Cloudflare Access hostname.
@@ -101,8 +86,6 @@ Important hosted boundary:
 - Do **not** assume a bearer token alone is a supported way to reach browser routes on that hostname.
 - `/api/sync-hook` is the supported bearer-based machine entrypoint, not the model for the whole browser surface.
 
-=======
->>>>>>> gsd/M002/S04
 ## Daily Sweep Layered on Top of Refresh
 
 When operators want one unattended command, schedule:
@@ -124,11 +107,6 @@ If `manualFollowUpVideoIds` is non-empty, those videos need manual follow-up bec
 rerun-only mismatch such as `artifacts-without-run`. That is an intentional stop signal: the sweep
 leaves those videos visible for an explicit rerun and does not fabricate missing run history or auto-start analysis.
 
-<<<<<<< HEAD
-=======
->>>>>>> gsd/M002/S03
-=======
->>>>>>> gsd/M002/S04
 ## What Refresh Does **Not** Do
 
 Refresh does **not**:
@@ -220,7 +198,6 @@ This is a startup-visible contract. The goal is to fail or warn before operators
 
 ## Hosted Topologies
 
-<<<<<<< HEAD
 The hosted contract now has one explicit split:
 
 ### Human browser access
@@ -253,33 +230,6 @@ Supported machine entrypoints stay explicit and narrow:
 3. **Deploy automation**
    - Use a dedicated deploy hostname such as `library-deploy.aojdevstudio.me` for deploy hooks and other unattended machine-only ingress.
    - Keep that hostname outside the friend-facing OTP/browser flow and secure it with webhook signature verification plus optional Cloudflare service-token policy when the caller is not already constrained another way.
-=======
-Two supported automation shapes:
-
-### A. Same-machine cron
-
-Use cron/systemd on the app host to run:
-
-```bash
-cd /opt/transcript-library/current
-node --import tsx scripts/daily-operational-sweep.ts
-```
-
-Use this when the app host is responsible for unattended refresh-only ingest plus the conservative
-historical repair pass. Inspect `data/runtime/daily-operational-sweep/latest.json` (or the sibling
-`runtime/` tree next to `INSIGHTS_BASE_DIR`) after each run; if `manualFollowUpVideoIds` is non-empty,
-those rerun-only videos need explicit operator follow-up and analysis remains on-demand.
-
-### B. Upstream webhook or external caller
-
-Have a trusted automation caller hit:
-
-```text
-POST https://<host>/api/sync-hook
-```
-
-with `Authorization: Bearer <SYNC_TOKEN>` (or `PRIVATE_API_TOKEN` when you intentionally want the broader private boundary token).
->>>>>>> gsd/M002/S03
 
 For hosted deployment, do **not** rely on the historical `http://localhost:3939/api/sync-hook` callback assumption from upstream scripts unless the caller really is running on the same machine and port layout.
 
