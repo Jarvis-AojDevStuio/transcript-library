@@ -98,19 +98,21 @@ Part 2  ·  1,800 words         Open ↗
 <summary><b>The pipeline: how a video becomes an insight</b></summary>
 
 ```
-Shared YouTube Playlist
+Shared YouTube Playlist(s)
         ↓
-playlist-transcripts repo (auto-syncs every 4h)
+GitHub Action (every 4h) — yt-dlp + Python pipeline
         ↓
-Transcript Library catalog ingestion
+pipeline/youtube-transcripts/ (committed to repo)
+        ↓
+Coolify auto-deploy (Docker Compose)
+        ↓
+docker-entrypoint.sh rebuilds catalog if transcripts changed
         ↓
 POST /api/analyze?videoId=...
         ↓
 claude CLI or codex CLI (headless, local)
         ↓
 data/insights/<videoId>/analysis.md
-        ↓
-VideoAnalysisWorkspace (live status, polling)
 ```
 
 </details>
@@ -135,7 +137,7 @@ VideoAnalysisWorkspace (live status, polling)
 ### Prerequisites
 
 - Node.js 18+ / [Bun](https://bun.sh)
-- A local clone of your `playlist-transcripts` repo
+- Transcripts are embedded in `pipeline/` — no external repo needed
 - `claude` CLI or `codex` CLI (for running analysis)
 
 ### Install
@@ -150,8 +152,8 @@ cp .env.example .env.local
 ### Configure
 
 ```bash
-# Required
-PLAYLIST_TRANSCRIPTS_REPO=/absolute/path/to/playlist-transcripts
+# Optional — local dev override only (transcripts are embedded in pipeline/ by default)
+# PLAYLIST_TRANSCRIPTS_REPO=/absolute/path/to/playlist-transcripts
 
 # Optional
 ANALYSIS_PROVIDER=claude-cli
@@ -230,9 +232,10 @@ npx tsx scripts/rebuild-catalog.ts --check
   DB, while still updating `last-import-validation.json` for operator review.
 - A failed validation leaves the last known-good `catalog.db` in place. The app does not fall back
   to `videos.csv` at runtime anymore.
-- `POST /api/sync-hook` and `scripts/daily-operational-sweep.ts` both use the supported refresh
-  authority before reading browse metadata, so unattended automation and the app use the same
-  catalog authority.
+- `POST /api/sync-hook` is retired — it returns 410. Catalog rebuild on deploy is handled by
+  `docker-entrypoint.sh`, which detects transcript changes and triggers a rebuild automatically.
+  `scripts/daily-operational-sweep.ts` uses the same refresh authority before reading browse
+  metadata, so unattended automation and the app use the same catalog authority.
 
 ### Provider Abstraction
 
@@ -308,7 +311,7 @@ remains on-demand or explicit.
 
 This started as a frustration. Our group watches a lot of YouTube — not casually, but deliberately. We share links and say "this one is worth your time." But saying it and actually watching it together are different things.
 
-The `playlist-transcripts` repo already existed — a cron job pulling transcript data for 243 videos across 91 channels. The AI tooling already existed. What didn't exist was a workspace that made the signal accessible without a separate workflow for every person in the group.
+Transcript data for 243 videos across 91 channels was already being pulled — that pipeline is now merged into this repo under `pipeline/`, with a GitHub Action syncing every 4 hours and committing the results. The AI tooling already existed. What didn't exist was a workspace that made the signal accessible without a separate workflow for every person in the group.
 
 So this became a reading room. You pick a video, the player loads inline, the analysis runs in the background, and the transcript is there if you want the exact words. The knowledge base holds notes alongside the video insights. Everything is organized by the same `videoId` key, so nothing ever gets lost.
 
