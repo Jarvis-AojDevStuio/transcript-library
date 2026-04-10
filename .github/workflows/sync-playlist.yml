@@ -1,0 +1,73 @@
+name: Sync Playlist Transcripts
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 4 hours
+    - cron: '0 */4 * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deno (required by yt-dlp for YouTube JS extraction)
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Verify deno
+        run: |
+          which deno
+          deno --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install yt-dlp
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up YouTube cookies
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then
+            printf "%s" "$YT_COOKIES" > pipeline/.yt-cookies.txt
+            echo "Wrote pipeline/.yt-cookies.txt ($(wc -c < pipeline/.yt-cookies.txt) bytes)"
+          else
+            echo "::warning::YT_COOKIES secret is not set. yt-dlp may hit bot checks."
+            echo "To fix: export YouTube cookies (Netscape format) and set repo secret YT_COOKIES."
+          fi
+
+      - name: Run sync
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          cd pipeline
+          ./sync_playlist.sh
+
+      - name: Push changes (if any)
+        run: |
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git add -A
+            git commit -m "Update playlist transcripts $(date -u '+%Y-%m-%d %H:%M UTC')" || true
+            git push
+          else
+            echo "No changes to push."
+          fi

@@ -1,0 +1,23 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - catalog-data:/app/data/catalog
+      - insights-data:/app/data/insights
+      - /home/deploy/.claude:/root/.claude:ro
+    environment:
+      - HOSTED=true
+      - NODE_ENV=production
+      - PRIVATE_API_TOKEN=${PRIVATE_API_TOKEN}
+      - CLOUDFLARE_ACCESS_AUD=${CLOUDFLARE_ACCESS_AUD}
+      - CLOUDFLARE_ACCESS_TEAM_DOMAIN=${CLOUDFLARE_ACCESS_TEAM_DOMAIN}
+      - ANALYSIS_PROVIDER=${ANALYSIS_PROVIDER:-claude-cli}
+      - CLAUDE_ANALYSIS_MODEL=${CLAUDE_ANALYSIS_MODEL}
+      - SYNC_TOKEN=${SYNC_TOKEN}
+    restart: unless-stopped
+
+volumes:
+  catalog-data:
+  insights-data:

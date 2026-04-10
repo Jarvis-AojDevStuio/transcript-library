@@ -1,0 +1,331 @@
+{
+  "timestamp": "2026-02-28T03:38:07.774339+00:00",
+  "repo_path": "/Users/aojdevstudio/projects/clawd/playlist-transcripts",
+  "classified_framework": "data-pipeline-based",
+  "framework_fit": "HIGH",
+  "visibility": "private",
+  "next_version": null,
+  "ai_tooling": [],
+  "summary": {
+    "total_checks": 16,
+    "pass": 12,
+    "fail": 2,
+    "warn": 2,
+    "info": 0,
+    "score": "12/16"
+  },
+  "checks": [
+    {
+      "category": "structural",
+      "name": "allowed-top-level",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "Top-level entries match allowed set",
+      "details": {
+        "found": [
+          ".github",
+          ".gitignore",
+          ".venv",
+          ".yt-cookies.txt",
+          ".yt-dlp-archive.txt",
+          "AUDIT",
+          "Plans",
+          "README.md",
+          "SUMMARY.md",
+          "docs",
+          "playlists.yml",
+          "reports",
+          "requirements.txt",
+          "sync_playlist.sh",
+          "youtube-transcripts"
+        ],
+        "unexpected": []
+      }
+    },
+    {
+      "category": "structural",
+      "name": "required-files",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "Required files present",
+      "details": {
+        "visibility": "private",
+        "missing": []
+      }
+    },
+    {
+      "category": "structural",
+      "name": "no-junk-root",
+      "severity": "WARN",
+      "status": "WARN",
+      "message": "Sensitive cookie file is tracked at repo root",
+      "details": {
+        "sensitive_files": [
+          ".yt-cookies.txt"
+        ]
+      },
+      "fix": "Do not commit real cookies; use local untracked cookies file or secret mount path."
+    },
+    {
+      "category": "structural",
+      "name": "folder-placement",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "Folder placement looks consistent",
+      "details": {
+        "notes": []
+      }
+    },
+    {
+      "category": "structural",
+      "name": "max-depth",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "Max depth 11 at .venv/lib/python3.14/site-packages/pip-26.0.dist-info/licenses/src/pip/_vendor/packaging/LICENSE",
+      "details": {
+        "max_depth": 11,
+        "max_path": ".venv/lib/python3.14/site-packages/pip-26.0.dist-info/licenses/src/pip/_vendor/packaging/LICENSE",
+        "limit": 12
+      }
+    },
+    {
+      "category": "metadata",
+      "name": "frontmatter-exists",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "All transcript markdown files have frontmatter",
+      "details": {
+        "missing_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "metadata",
+      "name": "required-fields",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "All required frontmatter fields are present",
+      "details": {
+        "required_fields": [
+          "video_id",
+          "title",
+          "channel",
+          "topic",
+          "published_date",
+          "ingested_date",
+          "source"
+        ],
+        "missing_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "metadata",
+      "name": "location-match",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "Metadata topic/channel matches folder location",
+      "details": {
+        "mismatch_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "unknown-bucket",
+      "name": "misc-overflow",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "No unknown/misc/unclassified directories found",
+      "details": {
+        "unknown_dirs": []
+      }
+    },
+    {
+      "category": "index",
+      "name": "all-files-indexed",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "All transcript files exist in videos.csv",
+      "details": {
+        "missing_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "index",
+      "name": "no-stale-entries",
+      "severity": "FAIL",
+      "status": "PASS",
+      "message": "No stale index entries",
+      "details": {
+        "stale_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "index",
+      "name": "no-duplicate-ids",
+      "severity": "FAIL",
+      "status": "FAIL",
+      "message": "1 video_id groups have duplicate chunk numbers",
+      "details": {
+        "invalid_chunk_groups": [
+          {
+            "video_id": "Yb9IyTOh0xg",
+            "rows": 6,
+            "duplicate_chunks": [
+              "2",
+              "3",
+              "1"
+            ]
+          }
+        ],
+        "nonchunk_duplicate_groups": [
+          {
+            "video_id": "jsI18Htgf8k",
+            "rows": 2
+          },
+          {
+            "video_id": "yANt4NysZw4",
+            "rows": 2
+          },
+          {
+            "video_id": "MSyWjPDrHJw",
+            "rows": 7
+          },
+          {
+            "video_id": "efctPj6bjCY",
+            "rows": 2
+          },
+          {
+            "video_id": "XpxDwVt3OFw",
+            "rows": 2
+          },
+          {
+            "video_id": "y3xzYwxQuHc",
+            "rows": 2
+          },
+          {
+            "video_id": "F_frSYyhzOE",
+            "rows": 2
+          },
+          {
+            "video_id": "CQeKmG1o85E",
+            "rows": 2
+          },
+          {
+            "video_id": "LpNODHhn-60",
+            "rows": 2
+          }
+        ]
+      },
+      "fix": "Repair chunk metadata and deduplicate repeated ingests by video_id."
+    },
+    {
+      "category": "index",
+      "name": "nonchunk-duplicate-ids",
+      "severity": "WARN",
+      "status": "WARN",
+      "message": "9 video_id groups have duplicate non-chunk rows",
+      "details": {
+        "groups": [
+          {
+            "video_id": "jsI18Htgf8k",
+            "rows": 2
+          },
+          {
+            "video_id": "yANt4NysZw4",
+            "rows": 2
+          },
+          {
+            "video_id": "MSyWjPDrHJw",
+            "rows": 7
+          },
+          {
+            "video_id": "efctPj6bjCY",
+            "rows": 2
+          },
+          {
+            "video_id": "XpxDwVt3OFw",
+            "rows": 2
+          },
+          {
+            "video_id": "y3xzYwxQuHc",
+            "rows": 2
+          },
+          {
+            "video_id": "F_frSYyhzOE",
+            "rows": 2
+          },
+          {
+            "video_id": "CQeKmG1o85E",
+            "rows": 2
+          },
+          {
+            "video_id": "LpNODHhn-60",
+            "rows": 2
+          }
+        ]
+      },
+      "fix": "Enforce one canonical non-chunk transcript per video_id."
+    },
+    {
+      "category": "index",
+      "name": "canonical-paths",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "All index file_path values are canonical relative paths",
+      "details": {
+        "noncanonical_count": 0,
+        "sample": []
+      }
+    },
+    {
+      "category": "index",
+      "name": "index-freshness",
+      "severity": "WARN",
+      "status": "PASS",
+      "message": "Index is fresh relative to transcript files",
+      "details": {
+        "index_mtime": "2026-02-27T21:03:19.015382",
+        "latest_transcript_mtime": "2026-02-27T21:03:18.783989"
+      }
+    },
+    {
+      "category": "pipeline",
+      "name": "archive-sync-drift",
+      "severity": "FAIL",
+      "status": "FAIL",
+      "message": "Archive missing 92 playlist IDs",
+      "details": {
+        "playlist_ids": 130,
+        "archive_ids": 38,
+        "missing_in_archive_from_playlist": 92,
+        "playlist_not_in_index": 1,
+        "missing_sample": [
+          "27j9at9briI",
+          "2ehTz4A5yJQ",
+          "3NzCBIcIqD0",
+          "3bGdg9hTvws",
+          "3j85WQbvz0A",
+          "3wglqgskzjQ",
+          "4_2j5wgt_ds",
+          "5QZxWmDl_tc",
+          "5dTjU2BPPis",
+          "66oOi9OLMCw",
+          "67zh8_yiPh4",
+          "6RiwOvsjJd8",
+          "7xTGNNLPyMI",
+          "8AKn-zJMIwY",
+          "8dVCSPXG6Mw",
+          "96Vl8s3EQhk",
+          "9BwpcO-0LuI",
+          "9NxMbmNL-kI",
+          "9pIMaCbPc0Q",
+          "9tmsq-Gvx6g"
+        ]
+      },
+      "fix": "Regenerate .yt-dlp-archive.txt from live playlist IDs after successful fetch."
+    }
+  ]
+}

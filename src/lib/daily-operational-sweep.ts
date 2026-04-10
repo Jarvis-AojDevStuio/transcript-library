@@ -170,6 +170,8 @@ export function runDailyOperationalSweep(
   const repairHistoricalArtifacts =
     options.repairHistoricalArtifacts ?? runRepairHistoricalArtifacts;
 
+  // source-refresh is retired: transcripts are now embedded in pipeline/.
+  // refreshSourceCatalog is a no-op that returns a synthetic "noop" record.
   const refresh = refreshSourceCatalog({ trigger });
   const repairReport = repairHistoricalArtifacts();
   const repairStatus = deriveRepairStatus(repairReport);

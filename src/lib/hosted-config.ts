@@ -11,7 +11,6 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
 // Environment detection
@@ -52,79 +51,19 @@ export function getHostedAccessConfig(): HostedAccessConfig {
   };
 }
 
-function runGit(repoRoot: string, args: string[]): string {
-  return execFileSync("git", args, {
-    cwd: repoRoot,
-    encoding: "utf8",
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
-}
-
-function catalogDirPath(): string {
-  const dbPath = process.env.CATALOG_DB_PATH?.trim() || path.join("data", "catalog", "catalog.db");
-  return path.dirname(dbPath);
-}
-
-function validateHostedSourceRepoContract(errors: string[], warnings: string[]) {
-  const repoRoot = process.env.PLAYLIST_TRANSCRIPTS_REPO?.trim();
-  if (!repoRoot) return;
-
-  if (!path.isAbsolute(repoRoot)) {
-    errors.push(
-      "PLAYLIST_TRANSCRIPTS_REPO must be an absolute path in hosted mode so refresh automation and raw transcript reads resolve the same checkout.",
-    );
+function validateEmbeddedPipelineContract(errors: string[], _warnings: string[]) {
+  // Transcripts are now embedded in the repo at pipeline/youtube-transcripts/.
+  // PLAYLIST_TRANSCRIPTS_REPO env var is optional (overrides default path).
+  // When not set, verify the embedded pipeline directory exists.
+  if (process.env.PLAYLIST_TRANSCRIPTS_REPO?.trim()) {
+    // Caller has explicitly overridden the path — trust them.
     return;
   }
 
-  if (!fs.existsSync(repoRoot)) {
+  const pipelineTranscriptsDir = path.join(process.cwd(), "pipeline", "youtube-transcripts");
+  if (!fs.existsSync(pipelineTranscriptsDir)) {
     errors.push(
-      `PLAYLIST_TRANSCRIPTS_REPO does not exist at ${repoRoot}. Hosted refresh needs an app-owned local transcript checkout.`,
-    );
-    return;
-  }
-
-  if (!fs.statSync(repoRoot).isDirectory()) {
-    errors.push(
-      `PLAYLIST_TRANSCRIPTS_REPO must point to a directory, but ${repoRoot} is not a directory.`,
-    );
-    return;
-  }
-
-  try {
-    const insideWorkTree = runGit(repoRoot, ["rev-parse", "--is-inside-work-tree"]);
-    if (insideWorkTree !== "true") {
-      errors.push(
-        `PLAYLIST_TRANSCRIPTS_REPO must be a git checkout. ${repoRoot} did not report an active work tree.`,
-      );
-      return;
-    }
-
-    const headState = runGit(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]);
-    if (headState === "HEAD" && !process.env.PLAYLIST_TRANSCRIPTS_BRANCH?.trim()) {
-      warnings.push(
-        "PLAYLIST_TRANSCRIPTS_REPO is in detached HEAD state and PLAYLIST_TRANSCRIPTS_BRANCH is not set. Configure the branch explicitly so refresh can fast-forward the intended upstream ref.",
-      );
-    }
-  } catch {
-    errors.push(
-      `PLAYLIST_TRANSCRIPTS_REPO must be a git checkout. Hosted refresh could not inspect git metadata under ${repoRoot}.`,
-    );
-  }
-
-  const catalogDir = catalogDirPath();
-  const refreshRecordPath = path.join(catalogDir, "last-source-refresh.json");
-  const validationReportPath = path.join(catalogDir, "last-import-validation.json");
-
-  if (!fs.existsSync(refreshRecordPath)) {
-    warnings.push(
-      `last-source-refresh.json is missing under ${catalogDir}. Run the refresh entrypoint once so hosted operators have durable source-refresh evidence.`,
-    );
-  }
-
-  if (!fs.existsSync(validationReportPath)) {
-    warnings.push(
-      `last-import-validation.json is missing under ${catalogDir}. Run the refresh or rebuild entrypoint once so hosted operators have catalog publish evidence.`,
+      `pipeline/youtube-transcripts/ does not exist at ${pipelineTranscriptsDir}. The embedded transcript directory is required. Ensure the pipeline/ directory is present in the deployment image.`,
     );
   }
 }
@@ -152,29 +91,20 @@ function validateHostedAccessContract(errors: string[], warnings: string[]) {
  * fail). In local mode, the same gaps produce warnings at most.
  *
  * Critical hosted requirements:
- * - `PLAYLIST_TRANSCRIPTS_REPO` — transcript source directory
  * - `PRIVATE_API_TOKEN` — shared secret for private API boundary
- *
- * Hosted refresh contract checks:
- * - `PLAYLIST_TRANSCRIPTS_REPO` must resolve to an app-owned git checkout
- * - detached HEAD requires explicit `PLAYLIST_TRANSCRIPTS_BRANCH`
- * - operators should have `last-source-refresh.json` and `last-import-validation.json`
+ * - `pipeline/youtube-transcripts/` must exist (or PLAYLIST_TRANSCRIPTS_REPO overrides)
  *
  * Non-critical but recommended:
- * - `SYNC_TOKEN` — webhook authentication (warns if missing in hosted mode)
+ * - `SYNC_TOKEN` — webhook authentication (warns if missing in hosted mode, endpoint is retired)
+ *
+ * Note: PLAYLIST_TRANSCRIPTS_REPO is now optional. Transcripts are embedded in
+ * the repo at pipeline/. Set PLAYLIST_TRANSCRIPTS_REPO only to override the default.
  */
 export function runPreflight(): PreflightResult {
   const hosted = isHosted();
   const mode = hosted ? "hosted" : "local";
   const errors: string[] = [];
   const warnings: string[] = [];
-
-  if (!process.env.PLAYLIST_TRANSCRIPTS_REPO) {
-    const msg =
-      "PLAYLIST_TRANSCRIPTS_REPO is not set. The app needs a transcript source directory to index videos.";
-    if (hosted) errors.push(msg);
-    else warnings.push(msg);
-  }
 
   if (!process.env.PRIVATE_API_TOKEN) {
     const msg =
@@ -185,12 +115,12 @@ export function runPreflight(): PreflightResult {
 
   if (hosted) {
     validateHostedAccessContract(errors, warnings);
-    validateHostedSourceRepoContract(errors, warnings);
+    validateEmbeddedPipelineContract(errors, warnings);
   }
 
   if (hosted && !process.env.SYNC_TOKEN) {
     warnings.push(
-      "SYNC_TOKEN is not set. The /api/sync-hook endpoint will return 503 for webhook callers unless they use PRIVATE_API_TOKEN.",
+      "SYNC_TOKEN is not set. The /api/sync-hook endpoint has been retired (returns 410). This warning can be safely ignored.",
     );
   }
 

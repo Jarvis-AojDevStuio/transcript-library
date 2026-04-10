@@ -6,10 +6,6 @@ Transcript Library is a private internal tool for a small friend group. The grou
 
 ## Core flow
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> gsd/M002/S03
 1. A video is added to the shared playlist and lands in the upstream transcript repo.
 2. Transcript Library refreshes its local `PLAYLIST_TRANSCRIPTS_REPO` checkout through `node --import tsx scripts/refresh-source-catalog.ts` or `POST /api/sync-hook`.
 3. The refresh authority fast-forwards the local checkout, rebuilds SQLite, and writes `data/catalog/last-source-refresh.json` plus `data/catalog/last-import-validation.json`.
@@ -18,18 +14,6 @@ Transcript Library is a private internal tool for a small friend group. The grou
 6. The server resolves metadata, builds a deterministic headless prompt, and launches the configured provider runtime.
 7. The runtime writes status, logs, metadata, run metadata, and markdown artifacts into `data/insights/<videoId>/`.
 8. The app reads those artifacts and renders the analysis alongside the video.
-<<<<<<< HEAD
-=======
-1. A video is added to the shared playlist and lands in the transcript repo.
-2. `npx tsx scripts/rebuild-catalog.ts` validates transcript metadata from `PLAYLIST_TRANSCRIPTS_REPO` and atomically publishes `data/catalog/catalog.db`.
-3. A user opens a video page and watches the YouTube video inside the app.
-4. The user starts analysis from the app.
-5. The server resolves metadata, builds a deterministic headless prompt, and launches the configured provider runtime.
-6. The runtime writes status, logs, metadata, run metadata, and markdown artifacts into `data/insights/<videoId>/`.
-7. The app reads those artifacts and renders the analysis alongside the video.
->>>>>>> gsd/M002/S01
-=======
->>>>>>> gsd/M002/S03
 
 ## Major subsystems
 
@@ -61,7 +45,6 @@ The app supports two deployment modes controlled by the `HOSTED` environment var
 
 Hosted mode has **two caller classes** behind one shared origin guard (`src/lib/private-api-guard.ts`):
 
-<<<<<<< HEAD
 1. **Friend-facing browser access** on `library.aojdevstudio.me`
    - Cloudflare Access is the identity system.
    - Browser requests are trusted only when they arrive with both `cf-access-jwt-assertion` and `cf-access-authenticated-user-email` and the app is configured with `CLOUDFLARE_ACCESS_AUD`.
@@ -72,9 +55,6 @@ Hosted mode has **two caller classes** behind one shared origin guard (`src/lib/
    - Any automation that must cross the Cloudflare edge should use either a dedicated automation hostname or Cloudflare service-token protection rather than assuming bearer-only access will work on the friend-facing hostname.
 
 This means hosted `/api/*` is **not** a single bearer-only contract anymore. Human browser routes such as `/api/insight`, `/api/analyze`, and `/api/insight/stream` are meant to succeed through Cloudflare-managed browser identity, while machine workflows keep explicit bearer/service-token paths.
-=======
-The `/api/sync-hook` endpoint is a refresh-only entrypoint. It continues to accept `SYNC_TOKEN` for dedicated webhook callers, and `PRIVATE_API_TOKEN` is also accepted as a universal override on sync-hook.
->>>>>>> gsd/M002/S03
 
 In hosted mode, response payloads are sanitized to strip internal filesystem paths, provider details, and worker PIDs. Local dev responses include full diagnostic detail.
 
@@ -82,7 +62,6 @@ The supported hosted contract is documented in `docs/operations/source-repo-sync
 
 ### Required env vars (hosted mode)
 
-<<<<<<< HEAD
 | Variable                      | Purpose                                                                                         |
 | ----------------------------- | ----------------------------------------------------------------------------------------------- |
 | `HOSTED`                      | Set to `true` or `1` to enable hosted mode                                                      |
@@ -91,15 +70,6 @@ The supported hosted contract is documented in `docs/operations/source-repo-sync
 | `PRIVATE_API_TOKEN`           | Hosted bearer token for supported machine callers                                               |
 | `SYNC_TOKEN`                  | Refresh webhook authentication for dedicated callers (recommended, not required)                |
 | `PLAYLIST_TRANSCRIPTS_BRANCH` | Recommended when the transcript checkout may be detached HEAD                                   |
-=======
-| Variable                      | Purpose                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `HOSTED`                      | Set to `true` or `1` to enable hosted mode                                       |
-| `PLAYLIST_TRANSCRIPTS_REPO`   | Absolute path to the app-owned transcript git checkout                           |
-| `PRIVATE_API_TOKEN`           | Shared secret for the private API boundary                                       |
-| `SYNC_TOKEN`                  | Refresh webhook authentication for dedicated callers (recommended, not required) |
-| `PLAYLIST_TRANSCRIPTS_BRANCH` | Recommended when the transcript checkout may be detached HEAD                    |
->>>>>>> gsd/M002/S03
 
 ## Scale validation
 
@@ -126,10 +96,6 @@ At 1000 videos, all benchmarks operate with 25×–250× headroom. The current S
 - Live browse catalog: `data/catalog/catalog.db` by default, or `CATALOG_DB_PATH` when configured
 - Source refresh record: `data/catalog/last-source-refresh.json`
 - Validation report: `data/catalog/last-import-validation.json`
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> gsd/M002/S03
 - Manual refresh-only validation: `node --import tsx scripts/refresh-source-catalog.ts --check`
 - Manual refresh-only publish: `node --import tsx scripts/refresh-source-catalog.ts`
 - Legacy catalog-only validation: `npx tsx scripts/rebuild-catalog.ts --check`
@@ -137,14 +103,6 @@ At 1000 videos, all benchmarks operate with 25×–250× headroom. The current S
 - Automated refresh callers: `POST /api/sync-hook` or host-local cron/systemd invoking the refresh CLI
 
 Refresh is refresh-only. Analysis remains on-demand and uses separate entrypoints.
-<<<<<<< HEAD
-=======
-- Manual validation: `npx tsx scripts/rebuild-catalog.ts --check`
-- Manual publish: `npx tsx scripts/rebuild-catalog.ts`
-- Automated refresh callers: `POST /api/sync-hook` and `scripts/nightly-insights.ts`
->>>>>>> gsd/M002/S01
-=======
->>>>>>> gsd/M002/S03
 
 ## Analysis runtime operations
 

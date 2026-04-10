@@ -1,134 +1,23 @@
 import { NextResponse } from "next/server";
-import crypto from "node:crypto";
-import type { BatchRequestMetadata } from "@/lib/runtime-batches";
-import { refreshSourceCatalog } from "@/lib/source-refresh";
-import { sanitizePayload } from "@/lib/private-api-guard";
 
 export const runtime = "nodejs";
 
 /**
- * Validates the `Authorization: Bearer <token>` header against an expected token
- * using a constant-time HMAC comparison to prevent timing attacks.
+ * POST /api/sync-hook — RETIRED
  *
- * @param req - Incoming request whose `authorization` header is inspected.
- * @param expectedToken - The token value to compare against.
- * @returns `true` if the provided token matches, `false` otherwise.
- */
-function validateBearerToken(req: Request, expectedToken: string): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) return false;
-
-  // HMAC both values to fixed-length buffers for fully constant-time comparison
-  const provided = crypto.createHmac("sha256", "sync-hook-compare").update(match[1]).digest();
-  const expected = crypto.createHmac("sha256", "sync-hook-compare").update(expectedToken).digest();
-  return crypto.timingSafeEqual(provided, expected);
-}
-
-function extractRequestIdentity(req: Request, bodyText: string): BatchRequestMetadata {
-  const idempotencyKey =
-    req.headers.get("idempotency-key") ??
-    req.headers.get("x-sync-request-id") ??
-    req.headers.get("x-github-delivery") ??
-    req.headers.get("x-delivery-id");
-  const receivedAt = new Date().toISOString();
-
-  if (idempotencyKey) {
-    return {
-      requestKey: `sync-hook:${idempotencyKey}`,
-      receivedAt,
-      idempotencyKey,
-      identityStrategy: "idempotency-key",
-      method: "POST",
-      path: "/api/sync-hook",
-      remoteAddress: req.headers.get("x-forwarded-for"),
-      userAgent: req.headers.get("user-agent"),
-    };
-  }
-
-  const fingerprint = crypto
-    .createHash("sha256")
-    .update(
-      JSON.stringify({
-        method: "POST",
-        path: "/api/sync-hook",
-        bodyText,
-        userAgent: req.headers.get("user-agent") ?? "",
-        forwardedFor: req.headers.get("x-forwarded-for") ?? "",
-        bucket: Math.floor(Date.now() / (10 * 60 * 1000)),
-      }),
-    )
-    .digest("hex")
-    .slice(0, 24);
-
-  return {
-    requestKey: `sync-hook:fingerprint:${fingerprint}`,
-    receivedAt,
-    identityStrategy: "time-window-fingerprint",
-    method: "POST",
-    path: "/api/sync-hook",
-    remoteAddress: req.headers.get("x-forwarded-for"),
-    userAgent: req.headers.get("user-agent"),
-  };
-}
-
-/**
- * POST /api/sync-hook
- * Webhook handler that refreshes the local source repo checkout and rebuilds the
- * SQLite catalog without starting analysis work.
+ * This endpoint previously triggered a runtime `git fetch`/`merge` on an external
+ * transcript repo. That repo has been merged into this repo at `pipeline/`.
+ * Runtime git sync is no longer necessary or possible.
  *
- * @param req - Incoming request. Must carry a valid `Authorization: Bearer` token
- *   matching the `SYNC_TOKEN` environment variable.
- * @returns JSON describing the refresh result, or a 401 / 503 error response.
+ * Returns 410 Gone for all requests.
  */
-export async function POST(req: Request) {
-  const syncToken = process.env.SYNC_TOKEN;
-  if (!syncToken) {
-    return NextResponse.json({ ok: false, error: "webhook not configured" }, { status: 503 });
-  }
-
-  // Accept SYNC_TOKEN (existing behavior) or PRIVATE_API_TOKEN (universal private boundary).
-  const privateToken = process.env.PRIVATE_API_TOKEN;
-  const syncValid = validateBearerToken(req, syncToken);
-  const privateValid = privateToken ? validateBearerToken(req, privateToken) : false;
-
-  if (!syncValid && !privateValid) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-
-  const bodyText = await req.text();
-  const request = extractRequestIdentity(req, bodyText);
-  const refresh = refreshSourceCatalog({
-    trigger: "sync-hook",
-    request,
-  });
-
-  console.log("[sync-hook] Source refresh", {
-    outcome: refresh.outcome,
-    phase: refresh.phase,
-    requestKey: refresh.request?.requestKey,
-    repo: {
-      branch: refresh.repo.branch,
-      headBefore: refresh.repo.headBefore,
-      headAfter: refresh.repo.headAfter,
-      upstreamHead: refresh.repo.upstreamHead,
-    },
-    catalogVersion: refresh.catalog.version,
-  });
-
-  const status = refresh.outcome === "failed" ? 500 : 200;
-
+export async function POST() {
   return NextResponse.json(
-    sanitizePayload({
-      ok: refresh.outcome !== "failed",
-      outcome: refresh.outcome,
-      phase: refresh.phase,
-      trigger: refresh.trigger,
-      request: refresh.request ?? null,
-      repo: refresh.repo,
-      catalog: refresh.catalog,
-      error: refresh.error ?? null,
-    }),
-    { status },
+    {
+      ok: false,
+      error:
+        "This endpoint has been retired. Transcripts are now embedded in the repo at pipeline/. Deploy a new image to update transcript content.",
+    },
+    { status: 410 },
   );
 }

@@ -1,0 +1,13 @@
+node_modules
+.git
+.gsd
+.next
+data/catalog
+data/insights
+pipeline/.venv
+pipeline/youtube-transcripts/inbox
+deploy/__tests__
+mockups
+test-results
+*.log
+

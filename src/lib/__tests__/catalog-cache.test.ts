@@ -246,7 +246,10 @@ describe("catalog snapshot caching", () => {
     fs.rmSync(fixture.root, { recursive: true, force: true });
   });
 
-  it("picks up a refreshed catalog snapshot after source refresh without reloading the module", async () => {
+  it("picks up a refreshed catalog snapshot after a catalog rebuild without reloading the module", async () => {
+    // source-refresh is retired — transcripts are now embedded in pipeline/.
+    // This test verifies the catalog snapshot cache invalidates correctly after
+    // a direct rebuildCatalogFromCsv call (the mechanism used in the new model).
     const fixture = setupGitFixture([
       {
         videoId: "cache123xyz",
@@ -273,7 +276,8 @@ describe("catalog snapshot caching", () => {
     expect(getVideo("cache123xyz")?.title).toBe("Cache Alpha");
     expect(getVideo("fresh123xyz")).toBeUndefined();
 
-    writeRepoState(fixture.upstreamPath, [
+    // Simulate new transcripts arriving in the embedded pipeline/ (write directly to clonePath).
+    writeRepoState(fixture.clonePath, [
       {
         videoId: "cache123xyz",
         title: "Cache Alpha",
@@ -301,12 +305,9 @@ describe("catalog snapshot caching", () => {
         transcript: "Fresh transcript",
       },
     ]);
-    commitAll(fixture.upstreamPath, "add fresh video");
-    run("git", ["push", "origin", "master"], fixture.upstreamPath);
 
-    const { refreshSourceCatalog } = await import("@/lib/source-refresh");
-    const refresh = refreshSourceCatalog({ trigger: "cli" });
-    expect(refresh.outcome).toBe("updated");
+    // Rebuild catalog directly (as would happen during a new deploy).
+    rebuildCatalogFromCsv({ liveDbPath: fixture.liveDbPath });
 
     const secondSnapshot = groupVideos();
     expect(secondSnapshot).not.toBe(firstSnapshot);

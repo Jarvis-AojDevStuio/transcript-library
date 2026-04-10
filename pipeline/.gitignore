@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+youtube-transcripts/index/.last_summary_state
+
+# Local auth material
+.yt-cookies.txt

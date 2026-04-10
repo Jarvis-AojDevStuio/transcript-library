@@ -1,0 +1,4 @@
+playlists:
+  - name: main-curated
+    url: "https://youtube.com/playlist?list=PLnuGPVqDkDzSAf93OH2Zq1_6yXWZZOjdz"
+    enabled: true
