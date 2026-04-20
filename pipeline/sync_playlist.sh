@@ -32,6 +32,7 @@ PY="$(pick_venv_python)"
 
 if [ -z "$PY" ] || [ ! -x "$PY" ]; then
   echo "Bootstrapping Python venv (.venv)…"
+  rm -rf "$REPO/.venv"
   python3 -m venv "$REPO/.venv"
   PY="$(pick_venv_python)"
   if [ -z "$PY" ] || [ ! -x "$PY" ]; then
