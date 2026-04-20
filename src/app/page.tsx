@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { SearchBar } from "@/components/SearchBar";
 import { listChannels, groupVideos } from "@/modules/catalog";
 import { listRecentKnowledge } from "@/modules/recent";
 import { hasInsight } from "@/modules/insights";
@@ -52,6 +53,14 @@ export default async function Page() {
           A desktop research desk for reviewing YouTube transcripts alongside AI-generated analysis.
           No tabs, no context switching &mdash; everything on one page.
         </p>
+
+        <div className="mt-8 max-w-4xl space-y-3">
+          <SearchBar variant="hero" />
+          <p className="text-sm text-[var(--muted)]">
+            Search exact language across transcript bodies, takeaways, action items, and notable
+            points.
+          </p>
+        </div>
 
         {/* Stats row */}
         <div className="mt-8 flex gap-10">

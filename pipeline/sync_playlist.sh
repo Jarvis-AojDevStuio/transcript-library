@@ -23,8 +23,9 @@ pick_venv_python() {
   elif [ -x "$REPO/.venv/bin/python3" ]; then
     echo "$REPO/.venv/bin/python3"
   else
-    # Fallback: pick the newest python3.* if present
-    ls -1 "$REPO/.venv/bin/python3."* 2>/dev/null | sort -V | tail -n 1
+    # Fallback: pick the newest python3.* if present.
+    # Return success even when the venv does not exist yet so set -e does not abort.
+    ls -1 "$REPO/.venv/bin/python3."* 2>/dev/null | sort -V | tail -n 1 || true
   fi
 }
 
@@ -32,9 +33,14 @@ PY="$(pick_venv_python)"
 
 if [ -z "$PY" ] || [ ! -x "$PY" ]; then
   echo "Bootstrapping Python venv (.venv)…"
+  rm -rf "$REPO/.venv"
   python3 -m venv "$REPO/.venv"
-  "$REPO/.venv/bin/pip" install -r "$REQS"
   PY="$(pick_venv_python)"
+  if [ -z "$PY" ] || [ ! -x "$PY" ]; then
+    echo "Could not find a Python executable inside $REPO/.venv/bin after bootstrap" >&2
+    exit 1
+  fi
+  "$PY" -m pip install -r "$REQS"
 fi
 
 if [ -z "$PY" ] || [ ! -x "$PY" ]; then
@@ -51,16 +57,15 @@ fi
 mkdir -p "$INBOX"
 cd "$REPO"
 
-# Per repo directive: sync commits must land on master.
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$CURRENT_BRANCH" != "master" ]; then
-  echo "Error: sync_playlist.sh must be run on the master branch (current: $CURRENT_BRANCH)" >&2
-  echo "Tip: git checkout master && git pull --ff-only" >&2
+CURRENT_BRANCH="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}"
+if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" = "HEAD" ]; then
+  echo "Error: could not determine the current git branch" >&2
   exit 1
 fi
 
-# Ensure master is up to date to avoid pushing non-fast-forward history.
-git pull --ff-only origin master
+# Keep scheduled runs on main and allow workflow_dispatch validation on a fix branch.
+echo "Using git branch: $CURRENT_BRANCH"
+git pull --ff-only origin "$CURRENT_BRANCH"
 
 # Bootstrap archive from existing data if missing (prevents re-downloading on fresh clones)
 if [ ! -f "$ARCHIVE" ]; then
@@ -124,7 +129,7 @@ done
 if ! git diff --quiet || ! git diff --cached --quiet; then
   git add -A
   git commit -m "Update playlist transcripts $(date '+%Y-%m-%d %H:%M')" || true
-  git push origin master
+  git push origin "$CURRENT_BRANCH"
 
   # Trigger analysis for new videos (fails silently if server isn't running)
   if [ -n "${SYNC_TOKEN:-}" ]; then

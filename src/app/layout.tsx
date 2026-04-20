@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Manrope, Fraunces } from "next/font/google";
 import Link from "next/link";
 import { NavHeader } from "@/components/NavHeader";
+import { SearchBar } from "@/components/SearchBar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -16,6 +18,19 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+const themeInitScript = `
+(() => {
+  try {
+    const key = "transcript-library-theme";
+    const stored = window.localStorage.getItem(key);
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = stored === "dark" || stored === "light" ? stored : systemDark ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch {}
+})();
+`;
+
 export const metadata: Metadata = {
   title: "Transcript Library",
   description: "Watch YouTube videos inside the app while reviewing analysis and transcripts.",
@@ -24,21 +39,15 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Root application layout — applies global fonts (Manrope body, Fraunces display),
- * wraps every page in a sticky nav header, a centred main content area, and a
- * minimal footer. Also includes a skip-to-content link for keyboard navigation.
- *
- * @param children - Page content rendered inside the `<main>` element.
- */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.variable} ${fraunces.variable}`}>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <div className="min-h-dvh bg-[var(--app-bg)] text-[var(--ink)]">
           <a
             href="#main"
@@ -48,11 +57,15 @@ export default function RootLayout({
           </a>
 
           <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--app-bg)]/95 saturate-[1.4] backdrop-blur-[20px]">
-            <div className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-8">
+            <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-4 px-8 py-3">
               <Link href="/" className="font-display text-xl tracking-[-0.03em] text-[var(--ink)]">
                 Transcript Library
               </Link>
-              <NavHeader />
+              <div className="ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+                <NavHeader />
+                <ThemeToggle />
+                <SearchBar variant="compact" className="w-full min-[1100px]:max-w-[320px]" />
+              </div>
             </div>
           </header>
 

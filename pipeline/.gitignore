@@ -5,3 +5,6 @@ youtube-transcripts/index/.last_summary_state
 
 # Local auth material
 .yt-cookies.txt
+
+# Local virtualenv
+.venv/

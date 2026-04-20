@@ -62,6 +62,10 @@ type CatalogSnapshot = {
 
 let snapshotCache: CatalogSnapshot | undefined;
 
+export function __resetCatalogSnapshotForTests(): void {
+  snapshotCache = undefined;
+}
+
 export function playlistTranscriptsRepoRoot(): string {
   const override = process.env.PLAYLIST_TRANSCRIPTS_REPO;
   if (override) return override;

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { label: "Library", href: "/" },
+  { label: "Search", href: "/search" },
   { label: "Channels", href: "/channels" },
   { label: "Knowledge", href: "/knowledge" },
 ] as const;
@@ -21,16 +22,15 @@ export function NavHeader() {
     <nav className="flex items-center gap-1 text-sm font-medium text-[var(--muted)]">
       {navItems.map(({ label, href }) => {
         const active = isActive(pathname, href);
+        const className = [
+          "rounded-xl px-4 py-2 transition",
+          active
+            ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+            : "hover:bg-[var(--panel)] hover:text-[var(--ink)]",
+        ].join(" ");
+
         return (
-          <Link
-            key={href}
-            href={href}
-            className={`rounded-xl px-4 py-2 transition ${
-              active
-                ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "hover:bg-black/5 hover:text-[var(--ink)]"
-            }`}
-          >
+          <Link key={href} href={href} className={className}>
             {label}
           </Link>
         );
