@@ -23,8 +23,9 @@ pick_venv_python() {
   elif [ -x "$REPO/.venv/bin/python3" ]; then
     echo "$REPO/.venv/bin/python3"
   else
-    # Fallback: pick the newest python3.* if present
-    ls -1 "$REPO/.venv/bin/python3."* 2>/dev/null | sort -V | tail -n 1
+    # Fallback: pick the newest python3.* if present.
+    # Return success even when the venv does not exist yet so set -e does not abort.
+    ls -1 "$REPO/.venv/bin/python3."* 2>/dev/null | sort -V | tail -n 1 || true
   fi
 }
 
