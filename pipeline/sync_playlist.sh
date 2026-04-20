@@ -57,16 +57,15 @@ fi
 mkdir -p "$INBOX"
 cd "$REPO"
 
-# Per repo directive: sync commits must land on the default branch.
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$CURRENT_BRANCH" != "main" ]; then
-  echo "Error: sync_playlist.sh must be run on the main branch (current: $CURRENT_BRANCH)" >&2
-  echo "Tip: git checkout main && git pull --ff-only" >&2
+CURRENT_BRANCH="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}"
+if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" = "HEAD" ]; then
+  echo "Error: could not determine the current git branch" >&2
   exit 1
 fi
 
-# Ensure main is up to date to avoid pushing non-fast-forward history.
-git pull --ff-only origin main
+# Keep scheduled runs on main and allow workflow_dispatch validation on a fix branch.
+echo "Using git branch: $CURRENT_BRANCH"
+git pull --ff-only origin "$CURRENT_BRANCH"
 
 # Bootstrap archive from existing data if missing (prevents re-downloading on fresh clones)
 if [ ! -f "$ARCHIVE" ]; then
@@ -130,7 +129,7 @@ done
 if ! git diff --quiet || ! git diff --cached --quiet; then
   git add -A
   git commit -m "Update playlist transcripts $(date '+%Y-%m-%d %H:%M')" || true
-  git push origin main
+  git push origin "$CURRENT_BRANCH"
 
   # Trigger analysis for new videos (fails silently if server isn't running)
   if [ -n "${SYNC_TOKEN:-}" ]; then
