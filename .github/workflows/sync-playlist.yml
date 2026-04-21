@@ -65,8 +65,11 @@ jobs:
           ./sync_playlist.sh
 
       - name: Create or update pull request
+        id: create_pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.PR_CREATE_TOKEN || github.token }}
           branch: automation/sync-playlist-transcripts
           base: main
           delete-branch: true
@@ -76,3 +79,10 @@ jobs:
             Automated playlist transcript sync.
 
             This PR was opened by GitHub Actions because direct pushes to `main` are blocked by repository rules.
+
+      - name: Warn when PR creation is blocked
+        if: steps.create_pr.outcome == 'failure'
+        run: |
+          echo "::warning::Transcript updates were pushed to automation/sync-playlist-transcripts, but GitHub Actions could not open the pull request automatically."
+          echo "::warning::To allow automatic PR creation, either enable 'Allow GitHub Actions to create and approve pull requests' in repo settings or add a PAT secret named PR_CREATE_TOKEN."
+          echo "::notice::Manual PR URL: https://github.com/${{ github.repository }}/compare/main...automation/sync-playlist-transcripts?expand=1"
