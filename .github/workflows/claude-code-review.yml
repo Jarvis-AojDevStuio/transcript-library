@@ -18,6 +18,9 @@ jobs:
     #   github.event.pull_request.user.login == 'new-developer' ||
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
+    # Skip cross-repo PRs: the Claude action cannot fetch the expected OIDC env there.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,12 +29,34 @@ jobs:
       id-token: write
 
     steps:
+      - name: Detect Claude workflow edits in this PR
+        id: workflow_changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files="$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --paginate --jq '.[].filename')"
+
+          if printf '%s\n' "$files" | grep -Eq '^\.github/workflows/(claude-code-review|claude)\.yml$'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "This PR edits Claude workflow files, so Claude review will be skipped."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        if: steps.workflow_changes.outputs.skip != 'true'
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
+      - name: Skip self-review when workflow files change
+        if: steps.workflow_changes.outputs.skip == 'true'
+        run: |
+          echo "Skipping Claude Code Review because this PR edits Claude workflow files."
+          echo "The Anthropic action rejects runs when its workflow file differs from the default branch."
+
       - name: Run Claude Code Review
+        if: steps.workflow_changes.outputs.skip != 'true'
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
